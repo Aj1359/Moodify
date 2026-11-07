@@ -1,0 +1,38 @@
+[
+  {
+    "title": "Ilahi",
+    "artist": "Arijit Singh",
+    "language": "Hindi",
+    "genre": "Bollywood",
+    "moods": ["Happy", "Motivated"],
+    "energy": "high",
+    "url": "https://open.spotify.com/track/12345"
+  },
+  {
+    "title": "Kabira",
+    "artist": "Tochi Raina, Rekha Bhardwaj",
+    "language": "Hindi",
+    "genre": "Sufi Pop",
+    "moods": ["Nostalgic", "Sad", "Relaxed"],
+    "energy": "low",
+    "url": "https://open.spotify.com/track/67890"
+  },
+  {
+    "title": "Fix You",
+    "artist": "Coldplay",
+    "language": "English",
+    "genre": "Alternative Rock",
+    "moods": ["Sad", "Relaxed", "Nostalgic"],
+    "energy": "low",
+    "url": "https://open.spotify.com/track/54321"
+  },
+  {
+    "title": "Don't Stop Me Now",
+    "artist": "Queen",
+    "language": "English",
+    "genre": "Classic Rock",
+    "moods": ["Happy", "Motivated"],
+    "energy": "high",
+    "url": "https://open.spotify.com/track/98765"
+  }
+]
