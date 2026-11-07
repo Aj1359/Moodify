@@ -100,3 +100,4 @@ CREATE POLICY "Users can view their own feedback"
 CREATE POLICY "Users can insert or update their own feedback"
     ON public.song_feedback FOR ALL
     USING (auth.uid() = user_id);
+

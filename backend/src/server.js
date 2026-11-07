@@ -28,3 +28,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Moodify backend running on port ${PORT}`);
 });
+

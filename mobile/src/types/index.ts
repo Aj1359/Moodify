@@ -40,3 +40,4 @@ export interface MoodEntry {
 }
 
 export type FeedbackType = 'like' | 'dislike' | 'skip';
+

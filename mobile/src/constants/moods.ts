@@ -24,3 +24,4 @@ export const SUPPORTED_MOODS: MoodMeta[] = [
   { name: 'Romantic', emoji: '💖', color: '#F472B6' },
   { name: 'Nostalgic', emoji: '📻', color: '#FBBF24' },
 ];
+
