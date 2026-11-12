@@ -1,5 +1,7 @@
 import { supabase } from "./supabase";
 
+import { FeedbackType } from "../types";
+
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 export class ApiError extends Error {
@@ -85,4 +87,11 @@ export async function apiRequest<T>(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function submitFeedback(songId: string, type: FeedbackType) {
+  return apiRequest<{ success: boolean }>("/feedback", {
+    method: "POST",
+    body: JSON.stringify({ songId, type }),
+  });
 }
