@@ -25,7 +25,6 @@ export function useRecommendations(mood: SupportedMood) {
       const params = new URLSearchParams({
         mood,
         language,
-        limit: "10",
       });
 
       const result = await apiRequest<RecommendationsResponse>(

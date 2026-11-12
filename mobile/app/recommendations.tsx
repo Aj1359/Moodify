@@ -22,8 +22,16 @@ export default function RecommendationsScreen() {
   const params = useLocalSearchParams<{ mood?: string }>();
   const mood = params.mood as SupportedMood;
 
-  const { songs, loading, error, removeSong, restoreSong, refresh } =
-    useRecommendations(mood);
+  const {
+    songs,
+    loading,
+    error,
+    language,
+    setLanguage,
+    removeSong,
+    restoreSong,
+    refresh,
+  } = useRecommendations(mood);
 
   const [feedbackLoading, setFeedbackLoading] = useState<string | null>(null);
 
@@ -58,6 +66,27 @@ export default function RecommendationsScreen() {
         <Text style={styles.subtitle}>
           Songs selected for your {mood} mood.
         </Text>
+        <View style={styles.filterContainer}>
+          {(["Both", "Hindi", "English"] as const).map((item) => (
+            <Pressable
+              key={item}
+              style={[
+                styles.filterButton,
+                language === item && styles.activeFilter,
+              ]}
+              onPress={() => setLanguage(item)}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  language === item && styles.activeFilterText,
+                ]}
+              >
+                {item}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
 
         {loading && <ActivityIndicator size="large" color="#A78BFA" />}
 
@@ -131,5 +160,27 @@ const styles = StyleSheet.create({
   retryText: {
     color: "#121212",
     fontWeight: "bold",
+  },
+
+  filterContainer: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 20,
+  },
+  filterButton: {
+    paddingVertical: 9,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    backgroundColor: "#2A2A2A",
+  },
+  activeFilter: {
+    backgroundColor: "#A78BFA",
+  },
+  filterText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  activeFilterText: {
+    color: "#121212",
   },
 });
