@@ -206,6 +206,8 @@ Every endpoint returns exactly one of:
 
 A failed LLM call is **not** an error: `/mood/analyze` still returns 200, with `"source": "keyword"`.
 
+**Request validation.** Every route uses `validate('<schema>')` from `backend/src/middlewares/validate.js`, which sends the 400 above. Handlers read the cleaned input from `req.valid.body`, `req.valid.query` and `req.valid.params` (trimmed, numbers parsed, defaults filled, unknown fields dropped), never from `req.body`. Schemas: `analyzeMood`, `confirmMood`, `moodHistory`, `deleteMood`, `updatePreferences`, `recommendations`, `feedback`.
+
 ### 6.3 Endpoints
 
 | Endpoint | Request | `data` in the response |
@@ -385,7 +387,10 @@ Configure your `.env`:
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 EXPO_PUBLIC_API_BASE_URL=http://<YOUR_LOCAL_IP>:5000/api
+EXPO_PUBLIC_USE_MOCKS=false
 ```
+
+Set `EXPO_PUBLIC_USE_MOCKS=true` to run the app without a backend. `mobile/src/services/mocks.ts` exports `mockFetch`, a drop-in for `fetch` that answers every endpoint in section 6.3 with the real status codes and envelopes. Put `#error` in mood text to simulate a 500, or `#fallback` to get `"source": "keyword"`.
 
 Start the Expo development server:
 ```bash
@@ -403,7 +408,7 @@ npx expo start
 - [x] Curated 120-song seed catalog (60 Hindi, 60 English)
 - [ ] Supabase JWT authentication middleware
 - [ ] LLM Emotion Detection Service with Hinglish support
-- [ ] Keyword fallback rule engine (< 50ms fallback)
+- [x] Keyword fallback rule engine (< 50ms fallback)
 - [ ] Recommendation scoring & dislike exclusion service
 - [ ] Hinglish test dataset evaluation (50+ benchmark samples)
 
