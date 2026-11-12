@@ -44,12 +44,50 @@ test('detects Romanised Hinglish moods, including spelling variants', () => {
   assert.equal(top('bachpan ke din yaad aa gaye'), 'Nostalgic');
 });
 
+test('detects Hindi (Devanagari) moods, with or without nukta', () => {
+  assert.equal(top('आज बहुत खुश हूँ'), 'Happy');
+  assert.equal(top('आज ख़ुशी का दिन है'), 'Happy');
+  assert.equal(top('मन बहुत उदास है'), 'Sad');
+  assert.equal(top('मुझे बहुत गुस्सा आ रहा है'), 'Angry');
+  assert.equal(top('कल परीक्षा है, बहुत तनाव है'), 'Stressed');
+  assert.equal(top('थक गया हूँ, बस आराम करना है'), 'Relaxed');
+  assert.equal(top('इस बार कुछ कर दिखाना है'), 'Motivated');
+  assert.equal(top('मुझे प्यार हो गया है'), 'Romantic');
+  assert.equal(top('बचपन की यादें ताज़ा हो गईं'), 'Nostalgic');
+});
+
+test('handles Hindi negation and the danda as a clause boundary', () => {
+  assert.equal(top('मैं खुश नहीं हूँ'), 'Sad');
+  assert.deepEqual(keywordFallback('मुझे गुस्सा नहीं है').targetMoods, ['Relaxed']); // dropped -> default
+  assert.equal(top('तनाव नहीं। आज बहुत खुश हूँ'), 'Happy');
+});
+
 test('handles negation in English and Hinglish', () => {
   assert.equal(top('I am not happy at all'), 'Sad');
   assert.equal(top('khush nahi hu'), 'Sad');
   assert.equal(top('no tension, just chilling'), 'Relaxed');
   // a negator inside another phrase must not negate a neighbouring cue
   assert.ok(keywordFallback('mann nahi lag raha').targetMoods.includes('Sad'));
+});
+
+test('prefix terms match inflected forms', () => {
+  assert.equal(top('this is so frustrating'), 'Angry');
+  assert.equal(top('we are celebrating tonight'), 'Happy');
+  assert.equal(top('I keep panicking'), 'Stressed');
+});
+
+test('idioms like "can\'t stop" and "can\'t wait" are not negation', () => {
+  assert.equal(top("can't stop smiling today, so happy"), 'Happy');
+  assert.equal(top("can't wait for the weekend"), 'Happy');
+});
+
+test('one intensifier may sit inside a phrase', () => {
+  assert.equal(top('aaj mann bilkul nahi lag raha'), 'Sad');
+});
+
+test('negating a secondary mood of a cue group does not flip polarity', () => {
+  // "yaad nahi" = can't remember; must not become Sad via the longing group
+  assert.notEqual(top('kuch bhi yaad nahi ho raha'), 'Sad');
 });
 
 test('negation does not cross a clause boundary', () => {

@@ -81,14 +81,47 @@ function wordMatches(token, pattern) {
 // Compiled lexicon (built once at load time)
 // ---------------------------------------------------------------------------
 
+/** Normalise a lexicon term word by word, keeping a trailing "*" prefix marker. */
 function compileTerm(term) {
-  return normalize(term)
-    .split(' ')
-    .filter((word) => word && word !== BOUNDARY);
+  return String(term)
+    .split(/\s+/)
+    .flatMap((raw) => {
+      const isPrefix = raw.endsWith('*');
+      const words = normalize(isPrefix ? raw.slice(0, -1) : raw)
+        .split(' ')
+        .filter((word) => word && word !== BOUNDARY);
+      if (isPrefix && words.length) words[words.length - 1] += '*';
+      return words;
+    });
+}
+
+/** The mood a cue group points to most strongly. */
+function primaryMood(group) {
+  return Object.entries(group.moods).sort((a, b) => b[1] - a[1])[0][0];
 }
 
 function byLengthDesc(a, b) {
   return b.words.length - a.words.length;
+}
+
+/**
+ * Index terms by their first word so matching only tries plausible terms.
+ * Prefix terms ("frustrat*") cannot be looked up exactly and are kept apart.
+ */
+function buildIndex(entries) {
+  const exact = new Map();
+  const prefix = [];
+  for (const entry of entries) {
+    const first = entry.words[0];
+    if (first.endsWith('*')) {
+      prefix.push(entry);
+    } else {
+      if (!exact.has(first)) exact.set(first, []);
+      exact.get(first).push(entry);
+    }
+  }
+  const maxLength = Math.max(1, ...entries.map((entry) => entry.words.length));
+  return { exact, prefix, maxLength };
 }
 
 const COMPILED_CUES = lexicon.CUE_GROUPS.flatMap((group, groupIndex) => {
@@ -109,32 +142,57 @@ const COMPILED_CONTEXTS = lexicon.CONTEXT_CUES.flatMap(({ context, terms }) =>
   terms.map((term) => ({ words: compileTerm(term), context }))
 ).sort(byLengthDesc);
 
+const CUE_INDEX = buildIndex(COMPILED_CUES);
+const CONTEXT_INDEX = buildIndex(COMPILED_CONTEXTS);
+
 const NEG_BEFORE = new Set(lexicon.NEGATORS.before.map(normalize));
 const NEG_AROUND = new Set(lexicon.NEGATORS.around.map(normalize));
 const CLAUSE_BREAKS = new Set(lexicon.CLAUSE_BREAKS.map(normalize));
 const INTENSIFIERS = new Set(lexicon.INTENSIFIERS.map(normalize));
 const DIMINISHERS = new Set(lexicon.DIMINISHERS.map(normalize));
+const NEGATION_EXCEPTIONS = new Set(lexicon.NEGATION_EXCEPTIONS.map(normalize));
 
 // ---------------------------------------------------------------------------
 // Matching
 // ---------------------------------------------------------------------------
 
+/**
+ * Match `words` starting at `start`. One intensifier may sit between two
+ * phrase words ("mann bilkul nahi lag raha" still matches "mann nahi lag").
+ * Returns the end index (exclusive), or -1.
+ */
 function matchAt(tokens, start, words) {
-  if (start + words.length > tokens.length) return false;
-  return words.every((word, i) => wordMatches(tokens[start + i], word));
+  let i = start;
+  for (let w = 0; w < words.length; w += 1) {
+    if (w > 0 && i < tokens.length && INTENSIFIERS.has(tokens[i]) && !wordMatches(tokens[i], words[w])) i += 1;
+    if (i >= tokens.length || !wordMatches(tokens[i], words[w])) return -1;
+    i += 1;
+  }
+  return i;
+}
+
+function candidatesAt(tokens, start, index) {
+  const token = tokens[start];
+  if (token === BOUNDARY) return [];
+  const exact = new Set(variants(token).flatMap((form) => index.exact.get(form) || []));
+  return [...exact, ...index.prefix];
 }
 
 /** Non-overlapping matches, longest terms first. */
-function findMatches(tokens, compiled) {
+function findMatches(tokens, index) {
   const used = new Array(tokens.length).fill(false);
   const matches = [];
-  for (const entry of compiled) {
-    const n = entry.words.length;
-    for (let start = 0; start + n <= tokens.length; start += 1) {
-      if (used.slice(start, start + n).some(Boolean)) continue;
-      if (!matchAt(tokens, start, entry.words)) continue;
-      for (let i = start; i < start + n; i += 1) used[i] = true;
-      matches.push({ ...entry, start, end: start + n });
+  for (let length = index.maxLength; length >= 1; length -= 1) {
+    for (let start = 0; start < tokens.length; start += 1) {
+      if (used[start]) continue;
+      for (const entry of candidatesAt(tokens, start, index)) {
+        if (entry.words.length !== length) continue;
+        const end = matchAt(tokens, start, entry.words);
+        if (end < 0 || used.slice(start, end).some(Boolean)) continue;
+        for (let i = start; i < end; i += 1) used[i] = true;
+        matches.push({ ...entry, start, end });
+        break;
+      }
     }
   }
   return matches.sort((a, b) => a.start - b.start);
@@ -149,22 +207,31 @@ function isClauseEdge(token) {
  * clause edge. Tokens that belong to another matched phrase are skipped, so
  * the "nahi" inside "mann nahi lag raha" never negates a neighbouring cue.
  */
-function windowTokens(tokens, start, end, side, count, inPhrase = []) {
+function windowIndices(tokens, start, end, side, count, inPhrase = []) {
   const out = [];
   const step = side === 'before' ? -1 : 1;
   for (let i = side === 'before' ? start - 1 : end; i >= 0 && i < tokens.length && out.length < count; i += step) {
     if (isClauseEdge(tokens[i])) break;
-    if (!inPhrase[i]) out.push(tokens[i]);
+    if (!inPhrase[i]) out.push(i);
   }
   return out;
 }
 
+function windowTokens(tokens, start, end, side, count, inPhrase) {
+  return windowIndices(tokens, start, end, side, count, inPhrase).map((i) => tokens[i]);
+}
+
+/** A negator, unless it opens an idiom like "can't stop / can't help (smiling)". */
+function negatorAt(tokens, i, negators) {
+  return negators.has(tokens[i]) && !NEGATION_EXCEPTIONS.has(tokens[i + 1]);
+}
+
 function isNegated(tokens, match, inPhrase) {
-  const before = windowTokens(tokens, match.start, match.end, 'before', 3, inPhrase);
-  const after = windowTokens(tokens, match.start, match.end, 'after', 3, inPhrase);
+  const before = windowIndices(tokens, match.start, match.end, 'before', 3, inPhrase);
+  const after = windowIndices(tokens, match.start, match.end, 'after', 3, inPhrase);
   return (
-    before.some((t) => NEG_BEFORE.has(t) || NEG_AROUND.has(t)) ||
-    after.some((t) => NEG_AROUND.has(t))
+    before.some((i) => negatorAt(tokens, i, NEG_BEFORE) || negatorAt(tokens, i, NEG_AROUND)) ||
+    after.some((i) => negatorAt(tokens, i, NEG_AROUND))
   );
 }
 
@@ -176,7 +243,7 @@ function modifierOf(tokens, match) {
 }
 
 function findEmojis(rawText) {
-  const text = String(rawText).replace(/️/g, '');
+  const text = String(rawText).replace(/\uFE0F/g, '');
   const found = [];
   for (const cue of lexicon.EMOJI_CUES) {
     for (const emoji of cue.emojis) {
@@ -189,7 +256,7 @@ function findEmojis(rawText) {
 
 function detectContext(tokens) {
   const counts = new Map();
-  for (const match of findMatches(tokens, COMPILED_CONTEXTS)) {
+  for (const match of findMatches(tokens, CONTEXT_INDEX)) {
     const current = counts.get(match.context) || { count: 0, first: match.start };
     current.count += 1;
     counts.set(match.context, current);
@@ -217,7 +284,7 @@ function analyse(text) {
   let mild = false;
   let totalWeight = 0;
 
-  const matches = findMatches(tokens, COMPILED_CUES);
+  const matches = findMatches(tokens, CUE_INDEX);
   const inPhrase = new Array(tokens.length).fill(false);
   for (const m of matches) {
     if (m.words.length > 1) for (let i = m.start; i < m.end; i += 1) inPhrase[i] = true;
@@ -237,10 +304,10 @@ function analyse(text) {
       if (modifier === 'intense' || elongated) intense = true;
       if (modifier === 'mild') mild = true;
     } else {
-      for (const [mood, moodWeight] of Object.entries(group.moods)) {
-        const flipped = lexicon.NEGATION_FLIP[mood];
-        if (flipped) scores[flipped] += weight * moodWeight * FLIP_WEIGHT;
-      }
+      // Only the group's main mood flips: "yaad nahi" (can't remember) is not Sad.
+      const mood = primaryMood(group);
+      const flipped = lexicon.NEGATION_FLIP[mood];
+      if (flipped) scores[flipped] += weight * group.moods[mood] * FLIP_WEIGHT;
     }
 
     details.push({
@@ -284,8 +351,7 @@ function dominantGroup(groupScores, topMood) {
   let best = null;
   for (const [groupIndex, score] of groupScores) {
     const group = lexicon.CUE_GROUPS[groupIndex];
-    const [mainMood] = Object.entries(group.moods).sort((a, b) => b[1] - a[1])[0];
-    if (mainMood !== topMood) continue;
+    if (primaryMood(group) !== topMood) continue;
     if (!best || score > best.score) best = { group, score };
   }
   return best ? best.group : null;
