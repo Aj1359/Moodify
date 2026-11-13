@@ -2,30 +2,36 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+const apiRoutes = require('./routes');
+const { errorHandler } = require('./middlewares/errorHandler');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middlewares
+// Global Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Basic health check
+// Health check endpoint (unauthenticated)
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', service: 'Moodify API', timestamp: new Date() });
 });
 
-// Root route
+// Root welcome
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Moodify API. Feel it. Express it. Play it.' });
 });
 
-// TODO: Register routes
-// app.use('/api/mood', moodRoutes);
-// app.use('/api/recommendations', recommendationRoutes);
-// app.use('/api/feedback', feedbackRoutes);
-// app.use('/api/preferences', userRoutes);
+// API Routes
+app.use('/api', apiRoutes);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Moodify backend running on port ${PORT}`);
-});
+// Central Error Handler Middleware
+app.use(errorHandler);
 
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`🚀 Moodify backend running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
