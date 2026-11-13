@@ -410,7 +410,8 @@ npx expo start
 - [ ] LLM Emotion Detection Service with Hinglish support
 - [x] Keyword fallback rule engine (< 50ms fallback)
 - [ ] Recommendation scoring & dislike exclusion service
-- [ ] Hinglish test dataset evaluation (50+ benchmark samples)
+- [x] Hinglish test dataset (144 labelled samples, 3 languages) and evaluation harness ([docs/evaluation.md](docs/evaluation.md))
+- [ ] LLM pipeline reaches ≥ 80% accuracy on the benchmark (`npm run eval:llm`)
 
 ### Day 2: Mobile UI, Integration & Polish
 - [ ] Supabase Auth flow (Login, Sign-Up, Preferences Onboarding)
@@ -428,7 +429,7 @@ npx expo start
 
 | Metric | Target Goal | Verification Method |
 | :--- | :--- | :--- |
-| **Emotion Detection Accuracy** | $\ge 80\%$ | Evaluated against 50 labelled Hinglish/Hindi/English benchmark prompts |
+| **Emotion Detection Accuracy** | $\ge 80\%$ | `npm run eval:llm` on 144 labelled English / Hindi / Hinglish sentences (`backend/tests/hinglish_eval.json`) |
 | **End-to-End Latency** | $< 10$ seconds | Total time from prompt submission to playable song list |
 | **Model Confirmation Rate** | $\ge 70\%$ | Ratio of users accepting detected mood without editing |
 | **System Reliability** | 0 crashes | Graceful degradation to fallback rules and cached tracks upon API failure |

@@ -26,7 +26,7 @@ const CUE_GROUPS = [
         'partying', 'dance', 'dancing', 'fun', 'lit', 'vibing', 'proud', 'smiling', 'lucky', 'promotion',
         'great day', 'best day', 'good day', 'good mood', 'feeling good', 'feel good', 'feeling great',
         'on top of the world', 'got selected', 'got placed', 'got the job', 'cleared the exam',
-        'in a great mood',
+        'in a great mood', 'cant wait',
       ],
       hinglish: [
         'khush', 'khushi', 'khus', 'maza', 'mazaa', 'maja', 'majaa', 'mazze', 'mast', 'masti', 'badhiya',
@@ -36,7 +36,10 @@ const CUE_GROUPS = [
         'accha feel', 'acha feel', 'dil khush', 'party kar*', 'celebrate kar*', 'khush khabri',
         'selection ho gaya', 'select ho gaya', 'placement ho gaya', 'placement lag gayi',
       ],
-      hi: [],
+      hi: [
+        'खुश', 'खुशी', 'खुशियां', 'मज़ा', 'मजा', 'मस्त', 'बढ़िया', 'शानदार', 'ज़बरदस्त', 'आनंद',
+        'उत्साहित', 'जश्न', 'नाचना', 'नाचने', 'अच्छा लग रहा', 'दिल खुश', 'मज़ा आ', 'पार्टी करनी',
+      ],
     },
   },
   {
@@ -63,7 +66,11 @@ const CUE_GROUPS = [
         'fail ho gayi', 'karne ka mann nahi', 'karne ka man nahi', 'mann nahi kar raha',
         'man nahi kar raha',
       ],
-      hi: [],
+      hi: [
+        'उदास', 'उदासी', 'दुखी', 'दुख', 'दुःख', 'रोना', 'रोने', 'अकेला', 'अकेली', 'अकेलापन', 'तन्हा',
+        'तन्हाई', 'दर्द', 'ग़म', 'निराश', 'धोखा', 'रो रहा', 'रो रही', 'दिल टूट', 'मन नहीं लग',
+        'मन उदास', 'बुरा लग', 'कुछ अच्छा नहीं', 'छोड़ दिया', 'मूड खराब', 'मूड ऑफ',
+      ],
     },
   },
   {
@@ -84,7 +91,10 @@ const CUE_GROUPS = [
         'dimag kharab', 'dimaag kharab', 'dimag mat kha', 'khoon khaul', 'jal raha', 'jal rahi',
         'pagal kar', 'sir phod', 'tod dun', 'tod du', 'maar dun',
       ],
-      hi: [],
+      hi: [
+        'गुस्सा', 'नाराज़', 'चिढ़', 'चिड़चिड़ा', 'नफ़रत', 'भड़क', 'जलन', 'बकवास', 'दिमाग खराब',
+        'खून खौल', 'पागल कर', 'बर्दाश्त नहीं',
+      ],
     },
   },
   {
@@ -108,7 +118,11 @@ const CUE_GROUPS = [
         'exam ki tension', 'atak gaya', 'phas gaya', 'fas gaya', 'fasa hua', 'samajh nahi aa',
         'kya karun', 'kya karu', 'kya kru',
       ],
-      hi: [],
+      hi: [
+        'तनाव', 'टेंशन', 'परेशान', 'परेशानी', 'घबराहट', 'घबरा*', 'डर', 'चिंता', 'फ़िक्र', 'दबाव',
+        'बेचैन', 'बेचैनी', 'घुटन', 'प्रेशर', 'डर लग', 'सिर दर्द', 'सिर फट', 'बहुत काम', 'नींद नहीं',
+        'समझ नहीं आ', 'क्या करूं', 'क्या करूँ',
+      ],
     },
   },
   {
@@ -129,7 +143,10 @@ const CUE_GROUPS = [
         'chill kar', 'relax kar', 'aaram kar', 'araam kar', 'halka feel', 'halka lag', 'chai pe',
         'kuch soft', 'kuch halka', 'relax wala', 'chill wala', 'sukoon wala',
       ],
-      hi: [],
+      hi: [
+        'आराम', 'सुकून', 'शांति', 'शांत', 'चैन', 'सुहाना', 'रिलैक्स', 'चिल', 'हल्का महसूस',
+        'आराम करना',
+      ],
     },
   },
   {
@@ -146,7 +163,10 @@ const CUE_GROUPS = [
         'thak gaya', 'thak gayi', 'thak chuka', 'neend aa', 'sona hai', 'energy nahi', 'jaan nahi',
         'himmat nahi', 'lamba din', 'pura din',
       ],
-      hi: [],
+      hi: [
+        'थका', 'थकी', 'थके', 'थकान', 'थकावट', 'थक गया', 'थक गई', 'थक गयी', 'नींद आ', 'सोना है',
+        'हिम्मत नहीं', 'लंबा दिन',
+      ],
     },
   },
   {
@@ -169,7 +189,10 @@ const CUE_GROUPS = [
         'padhne baith', 'focus karna', 'focus kar', 'phod denge', 'phod dunga', 'full power', 'full josh',
         'chalo shuru',
       ],
-      hi: [],
+      hi: [
+        'जोश', 'जज़्बा', 'जुनून', 'हिम्मत', 'मेहनत', 'तैयार', 'तैयारी', 'प्रेरित', 'जीत', 'जीतना',
+        'हौसला', 'कुछ कर दिखाना', 'कर दिखाना', 'पूरी ताकत', 'हार नहीं',
+      ],
     },
   },
   {
@@ -189,7 +212,9 @@ const CUE_GROUPS = [
         'dil aa gaya', 'uske saath', 'unke saath', 'date pe', 'date par', 'milne ja', 'first date',
         'propose kar', 'haan bol di', 'haan bol diya', 'crush ne', 'crush se',
       ],
-      hi: [],
+      hi: [
+        'प्यार', 'इश्क़', 'मोहब्बत', 'प्रेम', 'जानू', 'रोमांटिक', 'दिल आ गया', 'उसके साथ', 'पहली डेट',
+      ],
     },
   },
   {
@@ -210,7 +235,10 @@ const CUE_GROUPS = [
         'college ke din', 'hostel ke din', 'yaad karna', 'yaad kar raha', 'yaad kar rahi',
         'nani ke ghar', 'dadi ke ghar',
       ],
-      hi: [],
+      hi: [
+        'बचपन', 'यादें', 'यादों', 'पुराने दिन', 'पुरानी यादें', 'वो दिन', 'वह दिन', 'स्कूल के दिन',
+        'कॉलेज के दिन', 'नानी के घर', 'पुराने गाने', 'याद करना',
+      ],
     },
   },
   {
@@ -228,7 +256,10 @@ const CUE_GROUPS = [
         'yaad aa', 'yaad aati', 'yaad aata', 'bahut yaad', 'uski yaad', 'ghar ki yaad', 'ghar yaad',
         'maa ki yaad', 'door hai', 'dur hai',
       ],
-      hi: [],
+      hi: [
+        'याद', 'दूरी', 'याद आ', 'याद आती', 'याद आता', 'बहुत याद', 'उसकी याद', 'घर की याद',
+        'मां की याद', 'माँ की याद', 'दूर है',
+      ],
     },
   },
 ];
@@ -255,8 +286,11 @@ const NEGATORS = {
     'not', 'no', 'never', 'dont', 'doesnt', 'didnt', 'isnt', 'wasnt', 'arent', 'werent', 'cant',
     'cannot', 'wont', 'nothing', 'without', 'hardly', 'barely', 'neither', 'nor', 'aint',
   ],
-  around: ['nahi', 'nahin', 'nhi', 'nai', 'mat'],
+  around: ['nahi', 'nahin', 'nhi', 'nai', 'mat', 'नहीं', 'नही', 'मत', 'न'],
 };
+
+/** A negator followed by one of these opens an idiom, not a negation: "can't stop smiling". */
+const NEGATION_EXCEPTIONS = ['stop', 'help', 'wait'];
 
 /** Negated moods that flip to an opposite instead of just being dropped. */
 const NEGATION_FLIP = {
@@ -270,7 +304,7 @@ const NEGATION_FLIP = {
 /** Words that end a clause: negation and intensity never reach across them. */
 const CLAUSE_BREAKS = [
   'but', 'however', 'although', 'though', 'yet', 'because', 'coz', 'cuz',
-  'par', 'pr', 'lekin', 'magar', 'kyunki', 'kyuki', 'kyonki',
+  'par', 'pr', 'lekin', 'magar', 'kyunki', 'kyuki', 'kyonki', 'लेकिन', 'पर', 'मगर', 'क्योंकि',
 ];
 
 const INTENSIFIERS = [
@@ -278,11 +312,12 @@ const INTENSIFIERS = [
   'insanely', 'deeply', 'incredibly', 'terribly', 'awfully', 'utterly', 'seriously', 'damn', 'hella',
   'bahut', 'bohot', 'bohut', 'bhot', 'bht', 'bahot', 'bhut', 'boht', 'bahutt', 'itna', 'itni', 'itne',
   'kaafi', 'kafi', 'ekdum', 'bilkul', 'zyada', 'jyada', 'jada', 'sabse', 'hadd', 'full',
+  'बहुत', 'बेहद', 'काफी', 'काफ़ी', 'ज़्यादा', 'ज्यादा', 'एकदम', 'बिलकुल', 'बिल्कुल', 'इतना', 'इतनी', 'सबसे',
 ];
 
 const DIMINISHERS = [
   'bit', 'little', 'slightly', 'kinda', 'somewhat', 'mildly', 'sorta', 'thoda', 'thodi', 'thode',
-  'halka', 'zara',
+  'halka', 'zara', 'थोड़ा', 'थोड़ी', 'ज़रा', 'हल्का',
 ];
 
 /** Context cues: what the feeling is about. Free-text label, snake_case. */
@@ -292,7 +327,7 @@ const CONTEXT_CUES = [
     terms: [
       'office', 'work', 'boss', 'job', 'manager', 'meeting', 'meetings', 'client', 'shift', 'overtime',
       'appraisal', 'salary', 'promotion', 'colleague', 'colleagues', 'internship', 'kaam', 'naukri',
-      'deadline', 'deadlines',
+      'deadline', 'deadlines', 'ऑफिस', 'दफ्तर', 'काम', 'बॉस', 'नौकरी', 'मीटिंग', 'डेडलाइन',
     ],
   },
   {
@@ -301,55 +336,58 @@ const CONTEXT_CUES = [
       'exam', 'exams', 'test', 'assignment', 'assignments', 'study', 'studying', 'studies', 'college',
       'class', 'classes', 'lecture', 'semester', 'sem', 'results', 'result', 'marks', 'grades', 'viva',
       'quiz', 'endsem', 'midsem', 'midsems', 'padhai', 'padhna', 'padhne', 'jee', 'neet', 'upsc',
-      'placement', 'placements',
+      'placement', 'placements', 'परीक्षा', 'पेपर', 'पढ़ाई', 'कॉलेज', 'एग्जाम', 'रिजल्ट', 'इंटरव्यू',
     ],
   },
   {
     context: 'relationship',
     terms: [
       'breakup', 'break up', 'broke up', 'girlfriend', 'boyfriend', 'gf', 'bf', 'crush', 'partner', 'ex',
-      'date', 'dating', 'wife', 'husband', 'relationship', 'pyaar', 'pyar', 'uske saath',
+      'date', 'dating', 'wife', 'husband', 'relationship', 'pyaar', 'pyar', 'uske saath', 'ब्रेकअप',
+      'गर्लफ्रेंड', 'बॉयफ्रेंड', 'रिश्ता', 'डेट', 'उसके साथ',
     ],
   },
   {
     context: 'family',
     terms: [
       'family', 'mom', 'mum', 'mummy', 'maa', 'mother', 'dad', 'papa', 'father', 'parents', 'ghar',
-      'home', 'bhai', 'behen', 'sister', 'brother', 'nani', 'dadi', 'grandma', 'grandpa', 'homesick',
+      'home', 'bhai', 'behen', 'sister', 'brother', 'nani', 'dadi', 'grandma', 'grandpa', 'homesick', 'परिवार',
+      'घर', 'मां', 'माँ', 'पापा', 'मम्मी', 'भाई', 'बहन', 'नानी', 'दादी',
     ],
   },
   {
     context: 'fitness',
     terms: [
       'gym', 'workout', 'work out', 'run', 'running', 'jog', 'jogging', 'cricket', 'football', 'match',
-      'training', 'exercise', 'yoga', 'cycling',
+      'training', 'exercise', 'yoga', 'cycling', 'जिम', 'कसरत', 'दौड़', 'योग', 'मैराथन',
     ],
   },
   {
     context: 'celebration',
     terms: [
       'party', 'birthday', 'bday', 'wedding', 'shaadi', 'festival', 'diwali', 'holi', 'celebration',
-      'celebrate', 'anniversary',
+      'celebrate', 'anniversary', 'पार्टी', 'जन्मदिन', 'शादी', 'त्योहार', 'दिवाली', 'होली', 'सालगिरह',
     ],
   },
   {
     context: 'travel',
     terms: [
       'trip', 'travel', 'travelling', 'traveling', 'journey', 'flight', 'train', 'road trip', 'vacation',
-      'holiday', 'safar', 'ghoomne', 'ghumne',
+      'holiday', 'safar', 'ghoomne', 'ghumne', 'यात्रा', 'सफ़र', 'घूमने',
     ],
   },
   {
     context: 'night',
-    terms: ['night', 'tonight', 'midnight', 'raat', 'late night', '3am', '2am', 'neend', 'sleep', 'insomnia'],
+    terms: ['night', 'tonight', 'midnight', 'raat', 'late night', '3am', '2am', 'neend', 'sleep', 'insomnia', 'रात', 'नींद'],
   },
   {
     context: 'weather',
-    terms: ['rain', 'raining', 'rainy', 'baarish', 'barish', 'monsoon', 'winter', 'sardi', 'thand'],
+    terms: ['rain', 'raining', 'rainy', 'baarish', 'barish', 'monsoon', 'winter', 'sardi', 'thand', 'बारिश', 'ठंड', 'सर्दी'],
   },
   {
     context: 'health',
-    terms: ['sick', 'ill', 'fever', 'bimaar', 'bimar', 'hospital', 'headache', 'sir dard', 'sar dard'],
+    terms: ['sick', 'ill', 'fever', 'bimaar', 'bimar', 'hospital', 'headache', 'sir dard', 'sar dard', 'बीमार', 'बुखार',
+      'अस्पताल', 'सिर दर्द'],
   },
 ];
 
@@ -357,6 +395,7 @@ module.exports = {
   CUE_GROUPS,
   EMOJI_CUES,
   NEGATORS,
+  NEGATION_EXCEPTIONS,
   NEGATION_FLIP,
   CLAUSE_BREAKS,
   INTENSIFIERS,
