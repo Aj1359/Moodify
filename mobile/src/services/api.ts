@@ -1,9 +1,11 @@
 import { supabase } from "./supabase";
-
+import { mockFetch } from "./mocks";
 import { FeedbackType } from "../types";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
+const env = process.env as Record<string, string | undefined>;
 
+const API_BASE_URL = env["EXPO_PUBLIC_API_BASE_URL"];
+const USE_MOCKS = env["EXPO_PUBLIC_USE_MOCKS"] === "true";
 export class ApiError extends Error {
   code: string;
 
@@ -30,32 +32,45 @@ export async function apiRequest<T>(
     throw new ApiError("API base URL is not configured", "CONFIG_ERROR");
   }
 
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession();
+  let accessToken: string | undefined;
 
-  if (sessionError) {
-    throw new ApiError(sessionError.message, "AUTH_ERROR");
-  }
+  if (!USE_MOCKS) {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
 
-  if (!session?.access_token) {
-    throw new ApiError("Please sign in to continue", "UNAUTHORIZED");
+    if (sessionError) {
+      throw new ApiError(sessionError.message, "AUTH_ERROR");
+    }
+
+    if (!session?.access_token) {
+      throw new ApiError("Please sign in to continue", "UNAUTHORIZED");
+    }
+
+    accessToken = session.access_token;
   }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
+    const url = `${API_BASE_URL}${endpoint}`;
+
+    const response = USE_MOCKS
+      ? await mockFetch(url, {
+          method: options.method,
+          body: typeof options.body === "string" ? options.body : undefined,
+        })
+      : await fetch(url, {
+          ...options,
+          signal: controller.signal,
+          headers: {
+            "Content-Type": "application/json",
+            ...options.headers,
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
 
     const result = (await response.json()) as ApiResponse<T>;
 
@@ -90,7 +105,7 @@ export async function apiRequest<T>(
 }
 
 export async function submitFeedback(songId: string, type: FeedbackType) {
-  return apiRequest<{ success: boolean }>("/feedback", {
+  return apiRequest<{ songId: string; type: FeedbackType }>("/feedback", {
     method: "POST",
     body: JSON.stringify({ songId, type }),
   });

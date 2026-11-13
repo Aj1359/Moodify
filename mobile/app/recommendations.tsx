@@ -34,7 +34,9 @@ export default function RecommendationsScreen() {
   } = useRecommendations(mood);
 
   const [feedbackLoading, setFeedbackLoading] = useState<string | null>(null);
-
+  const [feedbackBySong, setFeedbackBySong] = useState<
+    Record<string, FeedbackType>
+  >({});
   const handleFeedback = async (song: Song, type: FeedbackType) => {
     setFeedbackLoading(song.id);
 
@@ -44,6 +46,10 @@ export default function RecommendationsScreen() {
 
     try {
       await submitFeedback(song.id, type);
+      setFeedbackBySong((prev) => ({
+        ...prev,
+        [song.id]: type,
+      }));
 
       if (type === "like") {
         Alert.alert("Thank you!", "Song added to your liked feedback.");
@@ -109,6 +115,7 @@ export default function RecommendationsScreen() {
 
             <FeedbackButtons
               disabled={feedbackLoading === song.id}
+              selectedType={feedbackBySong[song.id] ?? null}
               onFeedback={(type) => handleFeedback(song, type)}
             />
           </View>

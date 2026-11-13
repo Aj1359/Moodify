@@ -5,36 +5,59 @@ import { FeedbackType } from "../types";
 interface FeedbackButtonsProps {
   onFeedback: (type: FeedbackType) => void;
   disabled?: boolean;
+  selectedType?: FeedbackType | null;
 }
 
 export default function FeedbackButtons({
   onFeedback,
   disabled = false,
+  selectedType = null,
 }: FeedbackButtonsProps) {
   return (
     <View style={styles.container}>
       <Pressable
-        style={[styles.button, styles.like, disabled && styles.disabled]}
+        style={[
+          styles.button,
+          styles.like,
+          selectedType === "like" && styles.selectedLike,
+          disabled && styles.disabled,
+        ]}
         onPress={() => onFeedback("like")}
         disabled={disabled}
       >
-        <Text style={styles.buttonText}>♥ Like</Text>
+        <Text style={styles.buttonText}>
+          {selectedType === "like" ? "♥ Liked" : "♥ Like"}
+        </Text>
       </Pressable>
 
       <Pressable
-        style={[styles.button, styles.skip, disabled && styles.disabled]}
+        style={[
+          styles.button,
+          styles.skip,
+          selectedType === "skip" && styles.selectedSkip,
+          disabled && styles.disabled,
+        ]}
         onPress={() => onFeedback("skip")}
         disabled={disabled}
       >
-        <Text style={styles.buttonText}>Skip →</Text>
+        <Text style={styles.buttonText}>
+          {selectedType === "skip" ? "Skipped ✓" : "Skip →"}
+        </Text>
       </Pressable>
 
       <Pressable
-        style={[styles.button, styles.dislike, disabled && styles.disabled]}
+        style={[
+          styles.button,
+          styles.dislike,
+          selectedType === "dislike" && styles.selectedDislike,
+          disabled && styles.disabled,
+        ]}
         onPress={() => onFeedback("dislike")}
         disabled={disabled}
       >
-        <Text style={styles.buttonText}>✕ Dislike</Text>
+        <Text style={styles.buttonText}>
+          {selectedType === "dislike" ? "✕ Disliked" : "✕ Dislike"}
+        </Text>
       </Pressable>
     </View>
   );
@@ -61,6 +84,15 @@ const styles = StyleSheet.create({
   },
   dislike: {
     backgroundColor: "#7F1D1D",
+  },
+  selectedLike: {
+    backgroundColor: "#16A34A",
+  },
+  selectedSkip: {
+    backgroundColor: "#575757",
+  },
+  selectedDislike: {
+    backgroundColor: "#DC2626",
   },
   buttonText: {
     color: "#FFFFFF",
