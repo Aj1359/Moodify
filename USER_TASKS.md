@@ -126,3 +126,4 @@
 1. **Aditya**: Implement `backend/src/services/musicService.js` with Spotify API credentials.
 2. **Hirannya**: Wire the `AudioPlayer` into `mobile/app/(tabs)/music.tsx`.
 3. **DevOps**: Configure `.github/workflows/ci.yml` to run test suites on commit.
+
