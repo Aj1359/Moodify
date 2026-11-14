@@ -13,7 +13,7 @@
  *   4. Emoji cues add to the same scores.
  *   5. Rank moods; derive emotion, energy, intensity and context.
  *
- * Contract (README section 6.4): returns a MoodAnalysisResult with
+ * Contract (docs/api.md, Backend function signatures): returns a MoodAnalysisResult with
  * source 'keyword', runs synchronously in well under 50 ms, never throws.
  */
 const { MOODS, MOOD_ENERGY, DEFAULT_ANALYSIS, LIMITS } = require('../config/constants');

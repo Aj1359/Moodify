@@ -1,6 +1,6 @@
 /**
  * The single translation layer between database rows (snake_case) and API
- * objects (camelCase). README 6.1: no other file converts key styles.
+ * objects (camelCase). docs/api.md: no other file converts key styles.
  *
  * - rowToX(row)  : database row -> API object with exactly the contract fields
  * - xToRow(obj)  : API object   -> database row for insert/update

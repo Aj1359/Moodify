@@ -2,7 +2,7 @@
  * Contract-accurate mock backend for building the app before the API is live.
  *
  * `mockFetch` is a drop-in replacement for `fetch`: same arguments, and it
- * answers every endpoint in README section 6.3 with the same status codes and
+ * answers every endpoint in docs/api.md with the same status codes and
  * { data } / { error } envelopes as the real backend. The API client only has
  * to swap one function:
  *

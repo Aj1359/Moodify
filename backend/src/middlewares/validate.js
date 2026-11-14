@@ -1,5 +1,5 @@
 /**
- * Request validation for every endpoint in the API contract (README 6.3).
+ * Request validation for every endpoint in the API contract (docs/api.md, Endpoints).
  *
  * Usage in a route file:
  *   const { validate } = require('../middlewares/validate');
