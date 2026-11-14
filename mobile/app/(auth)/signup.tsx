@@ -206,15 +206,6 @@ export default function SignupScreen() {
                 <Text style={styles.visualDescription}>
                   Whether you are stressed before an exam, buzzing from an achievement, or taking a late-night drive, Moodify finds the songs that speak your vibe.
                 </Text>
-
-                <View style={styles.quoteCard}>
-                  <Text style={styles.quoteText}>
-                    "aaj bahut thak gaya hu, kuch chill sunna hai"
-                  </Text>
-                  <Text style={styles.quoteAuthor}>
-                    → Analyzed into Relaxed mood playlist in 3s
-                  </Text>
-                </View>
               </View>
 
               <Text style={styles.copyrightText}>
@@ -498,24 +489,6 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 20,
     maxWidth: 380,
-  },
-  quoteCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 16,
-    padding: 16,
-    borderLeftWidth: 3,
-    borderLeftColor: THEME.colors.accentPink,
-  },
-  quoteText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontStyle: 'italic',
-    marginBottom: 6,
-  },
-  quoteAuthor: {
-    color: THEME.colors.accentPink,
-    fontSize: 12,
-    fontWeight: '600',
   },
   copyrightText: {
     fontSize: 12,

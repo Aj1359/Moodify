@@ -174,22 +174,6 @@ export default function LoginScreen() {
                 <Text style={styles.visualDescription}>
                   Express your emotions in English, Hindi, or Hinglish. We analyze your vibe and curate the perfect tracks in seconds.
                 </Text>
-
-                {/* Floating Mood Chips */}
-                <View style={styles.floatingMoodsRow}>
-                  <View style={styles.floatingChip}>
-                    <Text style={styles.floatingEmoji}>🌿</Text>
-                    <Text style={styles.floatingLabel}>Relaxed</Text>
-                  </View>
-                  <View style={[styles.floatingChip, styles.floatingChipActive]}>
-                    <Text style={styles.floatingEmoji}>😊</Text>
-                    <Text style={styles.floatingLabel}>Happy</Text>
-                  </View>
-                  <View style={styles.floatingChip}>
-                    <Text style={styles.floatingEmoji}>⚡</Text>
-                    <Text style={styles.floatingLabel}>Motivated</Text>
-                  </View>
-                </View>
               </View>
 
               <Text style={styles.copyrightText}>
@@ -480,33 +464,6 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 24,
     maxWidth: 380,
-  },
-  floatingMoodsRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  floatingChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  floatingChipActive: {
-    backgroundColor: 'rgba(255, 75, 114, 0.18)',
-    borderColor: THEME.colors.accentPink,
-  },
-  floatingEmoji: {
-    fontSize: 14,
-    marginRight: 6,
-  },
-  floatingLabel: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
   },
   copyrightText: {
     fontSize: 12,
