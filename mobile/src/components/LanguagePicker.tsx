@@ -1,12 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 
 interface LanguagePickerProps {
   selectedLanguages: ('Hindi' | 'English')[];
   onChange: (languages: ('Hindi' | 'English')[]) => void;
 }
 
-const LANGUAGES: ('Hindi' | 'English')[] = ['Hindi', 'English'];
+const LANGUAGES: { id: 'Hindi' | 'English'; prefix: string; label: string }[] = [
+  { id: 'Hindi', prefix: 'अ आ', label: 'Hindi' },
+  { id: 'English', prefix: '🌐', label: 'English' },
+];
 
 export default function LanguagePicker({
   selectedLanguages,
@@ -27,22 +30,38 @@ export default function LanguagePicker({
     <View style={styles.container}>
       <Text style={styles.label}>Preferred Languages</Text>
       <View style={styles.optionsRow}>
-        {LANGUAGES.map((lang) => {
-          const isSelected = selectedLanguages.includes(lang);
+        {LANGUAGES.map((item) => {
+          const isSelected = selectedLanguages.includes(item.id);
           return (
             <Pressable
-              key={lang}
-              onPress={() => toggleLanguage(lang)}
-              style={[styles.chip, isSelected && styles.selectedChip]}
+              key={item.id}
+              onPress={() => toggleLanguage(item.id)}
+              style={[
+                styles.chip,
+                isSelected ? styles.chipSelected : styles.chipUnselected,
+              ]}
             >
               <Text
                 style={[
-                  styles.chipText,
-                  isSelected && styles.selectedChipText,
+                  styles.prefixText,
+                  isSelected && styles.prefixSelected,
                 ]}
               >
-                {lang === 'Hindi' ? '🇮🇳 Hindi' : '🌐 English'}
+                {item.prefix}
               </Text>
+              <Text
+                style={[
+                  styles.labelText,
+                  isSelected && styles.labelSelected,
+                ]}
+              >
+                {item.label}
+              </Text>
+              {isSelected && (
+                <View style={styles.checkCircle}>
+                  <Text style={styles.checkIcon}>✓</Text>
+                </View>
+              )}
             </Pressable>
           );
         })}
@@ -53,37 +72,75 @@ export default function LanguagePicker({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 12,
+    marginVertical: 10,
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#E5E5E5',
+    color: '#D4CEE8',
     marginBottom: 8,
   },
   optionsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    backgroundColor: '#262626',
-    borderWidth: 1,
-    borderColor: '#404040',
+    paddingHorizontal: 16,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    ...(Platform.OS === 'web' && {
+      cursor: 'pointer',
+      userSelect: 'none',
+      transition: 'all 0.15s ease',
+    } as any),
   },
-  selectedChip: {
-    backgroundColor: '#1DB954',
-    borderColor: '#1DB954',
+  chipUnselected: {
+    backgroundColor: '#16132A',
+    borderColor: '#2B2648',
   },
-  chipText: {
-    color: '#D4D4D4',
+  chipSelected: {
+    backgroundColor: '#0C341F',
+    borderColor: '#22C55E',
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  prefixText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#9E94B8',
+    marginRight: 6,
+  },
+  prefixSelected: {
+    color: '#4ADE80',
+  },
+  labelText: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#C6BEDC',
   },
-  selectedChipText: {
+  labelSelected: {
     color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  checkCircle: {
+    marginLeft: 8,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#22C55E',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkIcon: {
+    color: '#0A0714',
+    fontSize: 11,
+    fontWeight: '900',
   },
 });
-
