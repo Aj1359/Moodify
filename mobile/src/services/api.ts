@@ -1,11 +1,22 @@
 import { supabase } from "./supabase";
 import { mockFetch } from "./mocks";
-import { FeedbackType } from "../types";
+import {
+  FeedbackType,
+  UserProfile,
+  UpdatePreferencesRequest,
+  MoodHistoryResponse,
+  DeleteMoodResponse,
+  Song,
+  ConfirmMoodRequest,
+  ConfirmMoodResponse,
+  MoodAnalysisResult,
+} from "../types";
 
 const env = process.env as Record<string, string | undefined>;
 
 const API_BASE_URL = env["EXPO_PUBLIC_API_BASE_URL"];
 const USE_MOCKS = env["EXPO_PUBLIC_USE_MOCKS"] === "true";
+
 export class ApiError extends Error {
   code: string;
 
@@ -28,10 +39,6 @@ export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
-  if (!API_BASE_URL) {
-    throw new ApiError("API base URL is not configured", "CONFIG_ERROR");
-  }
-
   let accessToken: string | undefined;
 
   if (!USE_MOCKS) {
@@ -55,7 +62,7 @@ export async function apiRequest<T>(
   const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${API_BASE_URL || "http://localhost:5000/api"}${endpoint}`;
 
     const response = USE_MOCKS
       ? await mockFetch(url, {
@@ -108,5 +115,44 @@ export async function submitFeedback(songId: string, type: FeedbackType) {
   return apiRequest<{ songId: string; type: FeedbackType }>("/feedback", {
     method: "POST",
     body: JSON.stringify({ songId, type }),
+  });
+}
+
+export async function getPreferences() {
+  return apiRequest<UserProfile>("/preferences");
+}
+
+export async function updatePreferences(data: UpdatePreferencesRequest) {
+  return apiRequest<UserProfile>("/preferences", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getMoodHistory(limit = 20) {
+  return apiRequest<MoodHistoryResponse>(`/mood/history?limit=${limit}`);
+}
+
+export async function deleteMoodEntry(id: string) {
+  return apiRequest<DeleteMoodResponse>(`/mood/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function getLikedSongs() {
+  return apiRequest<{ songs: Song[] }>("/feedback/liked");
+}
+
+export async function analyzeMood(text: string) {
+  return apiRequest<MoodAnalysisResult>("/mood/analyze", {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+}
+
+export async function confirmMood(data: ConfirmMoodRequest) {
+  return apiRequest<ConfirmMoodResponse>("/mood/confirm", {
+    method: "POST",
+    body: JSON.stringify(data),
   });
 }
