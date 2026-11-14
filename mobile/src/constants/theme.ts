@@ -24,3 +24,4 @@ export const THEME = {
     errorText: '#FCA5A5',
   },
 };
+

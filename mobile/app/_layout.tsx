@@ -16,8 +16,12 @@ function NavigationGate() {
     const isOnboarding = segments[1] === 'onboarding';
 
     if (!session) {
-      // 1. No session -> redirect to login screen
-      if (!inAuthGroup || isOnboarding) {
+      // 1. No session -> Landing page is LOGIN ONLY.
+      // Without login, no one can access onboarding or main tabs.
+      if (segments[1] === 'signup') {
+        return;
+      }
+      if (segments[1] !== 'login') {
         router.replace('/(auth)/login');
       }
     } else if (!profile) {
@@ -36,7 +40,7 @@ function NavigationGate() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1DB954" />
+        <ActivityIndicator size="large" color="#FF4B72" />
       </View>
     );
   }
@@ -44,9 +48,9 @@ function NavigationGate() {
   return (
     <>
       <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
+      <Stack screenOptions={{ headerShown: false }} initialRouteName="(auth)">
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="recommendations"
           options={{ presentation: 'modal' }}
@@ -67,7 +71,7 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#0A0714',
     justifyContent: 'center',
     alignItems: 'center',
   },

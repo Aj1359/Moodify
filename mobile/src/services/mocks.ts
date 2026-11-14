@@ -107,7 +107,7 @@ function initialState(): MockState {
     createdAt: new Date(now - daysAgo * DAY_MS).toISOString(),
   });
   return {
-    onboarded: true,
+    onboarded: false,
     profile: {
       userId: MOCK_USER_ID,
       name: 'Test User',

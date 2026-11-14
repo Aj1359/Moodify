@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import { supabase } from '../services/supabase';
 import { getPreferences, updatePreferences, ApiError } from '../services/api';
+import { appStorage } from '../services/storage';
 import { UserProfile, UpdatePreferencesRequest } from '../types';
 import { Session, User } from '@supabase/supabase-js';
 
@@ -47,18 +48,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (USE_MOCKS) {
-      // Mock session for offline development
-      const mockUser: any = {
-        id: '00000000-0000-4000-8000-000000000001',
-        email: 'test@moodify.local',
-      };
-      const mockSession: any = {
-        access_token: 'mock-token',
-        user: mockUser,
-      };
-      setUser(mockUser);
-      setSession(mockSession);
-      fetchProfile().finally(() => setLoading(false));
+      // Check if user had a saved session in local storage
+      appStorage.getItem('moodify_mock_session').then((saved) => {
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            setUser(parsed.user);
+            setSession(parsed);
+            fetchProfile().finally(() => setLoading(false));
+            return;
+          } catch {
+            // Invalid JSON, fall through to logged out
+          }
+        }
+        // Strict default: Not logged in. Landing page must be Login.
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setLoading(false);
+      });
       return;
     }
 
@@ -93,6 +101,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     if (USE_MOCKS) {
+      const mockUser: any = {
+        id: '00000000-0000-4000-8000-000000000001',
+        email: email || 'user@moodify.app',
+      };
+      const mockSession: any = {
+        access_token: 'mock-token-' + Date.now(),
+        user: mockUser,
+      };
+      await appStorage.setItem('moodify_mock_session', JSON.stringify(mockSession));
+      setUser(mockUser);
+      setSession(mockSession);
       await fetchProfile();
       return;
     }
@@ -106,6 +125,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     if (USE_MOCKS) {
+      const mockUser: any = {
+        id: '00000000-0000-4000-8000-000000000001',
+        email: email || 'user@moodify.app',
+      };
+      const mockSession: any = {
+        access_token: 'mock-token-' + Date.now(),
+        user: mockUser,
+      };
+      await appStorage.setItem('moodify_mock_session', JSON.stringify(mockSession));
+      setUser(mockUser);
+      setSession(mockSession);
+      setProfile(null);
       return;
     }
     const { error } = await supabase.auth.signUp({
@@ -117,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     if (USE_MOCKS) {
+      await appStorage.removeItem('moodify_mock_session');
       setUser(null);
       setSession(null);
       setProfile(null);
