@@ -1,5 +1,5 @@
 /**
- * Shared constants for the API contract (README section 6.1).
+ * Shared constants for the API contract (docs/api.md, Naming and allowed values).
  * Import these instead of retyping the values, so the backend has one
  * definition of every allowed value.
  */
@@ -25,7 +25,7 @@ const FEEDBACK_TYPES = Object.freeze(['like', 'dislike', 'skip']);
 const ANALYSIS_SOURCES = Object.freeze(['llm', 'keyword']);
 const RECOMMENDATION_SOURCES = Object.freeze(['db', 'fallback']);
 
-/** Typical energy of music for each mood (README section 3). */
+/** Typical energy of music for each mood (README, mood taxonomy). */
 const MOOD_ENERGY = Object.freeze({
   Happy: 'high',
   Sad: 'low',

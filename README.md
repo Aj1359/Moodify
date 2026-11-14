@@ -1,85 +1,138 @@
 # Moodify
 
-> **Feel it. Express it. Play it.**  
-> *Transform free-text emotions into personalized music playlists in under 10 seconds.*
+> **Feel it. Express it. Play it.**
+> Type how you feel in English, Hindi or Hinglish, and get a ranked list of Hindi and English songs that fit, in under 10 seconds.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![React Native](https://img.shields.io/badge/React_Native-Expo_v51-61DAFB?logo=react&logoColor=black)](https://expo.dev/)
-[![Supabase](https://img.shields.io/badge/Supabase-Database_%26_Auth-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com/)
+[![Expo](https://img.shields.io/badge/Expo-SDK_51-000020?logo=expo&logoColor=white)](https://expo.dev/)
+[![Supabase](https://img.shields.io/badge/Supabase-Postgres_%26_Auth-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com/)
+[![Gemini](https://img.shields.io/badge/Gemini-LLM-8E75B2?logo=googlegemini&logoColor=white)](https://ai.google.dev/)
 
----
+Mood playlists usually make you pick from a fixed menu of tags. Moodify lets you say it in your own words, the way you would text a friend: *"aaj office me bohot burnout ho gaya, need something chill"*. It works out the mood, lets you correct it, and recommends songs that match your mood, language and taste.
 
-## Table of Contents
+## Highlights
 
-- [1. Executive Summary](#1-executive-summary)
-- [2. System Architecture & Flow](#2-system-architecture--flow)
-- [3. Multilingual AI & Mood Taxonomy](#3-multilingual-ai--mood-taxonomy)
-- [4. Recommendation Engine & Scoring](#4-recommendation-engine--scoring)
-- [5. Database Schema & Data Models](#5-database-schema--data-models)
-- [6. API Contract](#6-api-contract)
-- [7. Mobile Screen Hierarchy](#7-mobile-screen-hierarchy)
-- [8. Repository Directory Structure](#8-repository-directory-structure)
-- [9. Getting Started & Installation](#9-getting-started--installation)
-- [10. 2-Day MVP Development Tracker](#10-2-day-mvp-development-tracker)
-- [11. Success Criteria & Metrics](#11-success-criteria--metrics)
+- **Three ways of writing:** English, Hindi in Devanagari, and Romanised Hinglish, including code-mixed text, slang, typos and emojis.
+- **Two-stage NLP pipeline:** Gemini in JSON mode with few-shot prompting, backed by a rule-based multilingual classifier that answers in under 1 ms when the LLM is slow or unavailable.
+- **You stay in control:** the app shows the detected mood and lets you change it before picking songs.
+- **Personal ranking:** songs from a curated 120-song Hindi and English catalog, scored on mood, language and what you have liked. Disliked songs never come back.
+- **Private history:** weekly mood counts, and you can delete one entry or all of them.
+- **Measured, not guessed:** a 144-sentence trilingual benchmark with accuracy, macro-F1 and a confusion matrix.
 
----
+## Contents
 
-## 1. Executive Summary
+- [How it works](#how-it-works)
+- [Quick start](#quick-start)
+- [The NLP pipeline](#the-nlp-pipeline)
+- [Evaluation](#evaluation)
+- [Recommendations](#recommendations)
+- [Architecture](#architecture)
+- [API](#api)
+- [Testing](#testing)
+- [Project status](#project-status)
+- [Team](#team)
+- [Contributing](#contributing)
 
-### The Problem
-Traditional music streaming platforms rely on rigid genre classifications or generic mood playlists. Users must browse extensively or select pre-defined emotion tags that fail to capture nuanced feelings, personal language blends, or recent feedback.
-
-### The Solution
-**Moodify** accepts unrestricted, conversational natural language in **English, Hindi (Devanagari), or Romanised Hinglish** (e.g., *"aaj office me bohot burnout ho gaya, need something chill"*). It extracts emotional intent, allows immediate confirmation, and matches the user with a curated, ranked catalog of Hindi and English tracks in under 10 seconds.
-
----
-
-## 2. System Architecture & Flow
+## How it works
 
 ```mermaid
 flowchart TD
-    User([User Mobile Client]) -->|1. Natural Language Input| LLMService[LLM Mood Analyzer]
-    LLMService -->|2. Structured JSON| UIModal[Mood Confirmation Screen]
-    
-    subgraph Fallback ["Latency & Safety Fallback"]
-        LLMService -.->|Timeout > 3s or Offline| KeywordEngine[Rule-Based Keyword Fallback]
-        KeywordEngine -.-> UIModal
-    end
-
-    UIModal -->|3. Confirmed Mood & Filters| RecEngine[Recommendation Engine]
-    
-    subgraph DataLayer ["Supabase Postgres & Storage"]
-        RecEngine <--> DB[(Songs & User Feedback)]
-    end
-    
-    RecEngine -->|4. Scored & Ranked Playlist| ResultsView[Recommendations View]
-    ResultsView -->|5. One-Tap Playback| ExtPlayer[YouTube Link]
-    ResultsView -->|6. Like / Dislike / Skip| FeedbackAPI[Feedback Recording]
-    FeedbackAPI --> DB
+    A([User types how they feel]) --> B["POST /api/mood/analyze"]
+    B --> C{Gemini answers<br/>within 3 s with valid JSON?}
+    C -- yes --> D["Mood analysis<br/>source: llm"]
+    C -- "no: timeout, error, bad JSON" --> E["Rule-based keyword classifier<br/>source: keyword"]
+    E --> D
+    D --> F["Confirm screen:<br/>accept or change the mood"]
+    F --> G["POST /api/mood/confirm<br/>saved to private history"]
+    F --> H["GET /api/recommendations<br/>mood + language + likes, dislikes removed"]
+    H --> I["Ranked songs, each with a reason"]
+    I --> J[Open on YouTube]
+    I --> K["Like / dislike / skip<br/>POST /api/feedback"]
+    K -. improves future rankings .-> H
 ```
 
----
+A failed LLM call never surfaces as an error: the keyword classifier returns the same JSON shape, so the app behaves the same either way.
 
-## 3. Multilingual AI & Mood Taxonomy
+## Quick start
 
-### Supported Mood Categories
-Moodify categorizes input into 8 foundational mood categories:
+You need **Node.js 18+** and the **Expo Go** app on your phone, or an Android or iOS simulator.
 
-| Mood | Emoji | Target Energy | Typical User Contexts |
+### Option A: run the app on mock data (no backend, no keys)
+
+The fastest way to see the app. A built-in mock backend answers every endpoint with realistic data, and login accepts any email and password.
+
+```bash
+cd mobile
+npm install
+cp .env.example .env        # then set EXPO_PUBLIC_USE_MOCKS=true
+npx expo start              # press a (Android), i (iOS), or scan the QR code with Expo Go
+```
+
+In mock mode, put `#error` in your mood text to simulate a server error, or `#fallback` to see a keyword-fallback answer.
+
+### Option B: run the full stack
+
+**1. Database (Supabase)**
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. Open **SQL Editor**, paste [`supabase/migrations/20261108000000_init_schema.sql`](supabase/migrations/20261108000000_init_schema.sql) and run it.
+3. Check that the tables `profiles`, `songs`, `mood_entries` and `song_feedback` exist.
+
+To run Supabase locally in Docker instead, use `npx supabase start` from the repo root. It applies the same migration.
+
+**2. Backend**
+
+```bash
+cd backend
+npm install
+cp .env.example .env        # fill in the values below
+npm run dev                 # http://localhost:5000/health should return {"status":"ok"}
+```
+
+**3. Mobile app**
+
+```bash
+cd mobile
+npm install
+cp .env.example .env        # fill in the values below, EXPO_PUBLIC_USE_MOCKS=false
+npx expo start
+```
+
+**Environment variables**
+
+| Variable | File | What it is |
+| --- | --- | --- |
+| `SUPABASE_URL` | `backend/.env` | Project URL, from Supabase → Project Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | `backend/.env` | Service role key. Secret: backend only, never in the app |
+| `SUPABASE_ANON_KEY` | `backend/.env` | Public anon key, used to verify user tokens |
+| `LLM_API_KEY` | `backend/.env` | Gemini key from [Google AI Studio](https://aistudio.google.com/app/apikey). Without it, every request uses the keyword classifier |
+| `LLM_MODEL` | `backend/.env` | Gemini model id, for example `gemini-2.5-flash` |
+| `EXPO_PUBLIC_SUPABASE_URL` | `mobile/.env` | Same project URL |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | `mobile/.env` | Public anon key. The app never gets the service role key |
+| `EXPO_PUBLIC_API_BASE_URL` | `mobile/.env` | `http://localhost:5000/api` on a simulator; `http://<your laptop's LAN IP>:5000/api` on a phone |
+| `EXPO_PUBLIC_USE_MOCKS` | `mobile/.env` | `true` for the mock backend, `false` for the real one |
+
+`.env` files are gitignored. Never commit real keys.
+
+## The NLP pipeline
+
+### Mood taxonomy
+
+Every input is mapped to one to three of eight moods, strongest first.
+
+| Mood | | Music energy | Typical situations |
 | :--- | :---: | :---: | :--- |
-| **Happy** | 😊 | High | Celebrations, energetic mornings, dance, excitement |
-| **Sad** | 🌧️ | Low | Heartbreak, lonely evenings, contemplation, grief |
-| **Angry** | 🔥 | High | Frustration, venting, workout intensity, rebellion |
-| **Stressed** | 🤯 | Medium / Low | Work pressure, exam anxiety, overwhelm |
-| **Relaxed** | 🌿 | Low | Unwinding, post-work chilling, studying, sleep |
-| **Motivated** | ⚡ | High | Gym workouts, studying, ambitious hustle, running |
-| **Romantic** | 💖 | Low / Medium | Late night chats, dates, soft acoustic, daydreaming |
-| **Nostalgic** | 📻 | Medium / Low | Childhood memories, old school classics, retrospection |
+| **Happy** | 😊 | High | Celebrations, good news, wanting to dance |
+| **Sad** | 🌧️ | Low | Heartbreak, loneliness, grief, feeling low |
+| **Angry** | 🔥 | High | Frustration, feeling wronged, venting |
+| **Stressed** | 🤯 | Medium | Exams, deadlines, interviews, overwhelm |
+| **Relaxed** | 🌿 | Low | Unwinding, tiredness, rainy days, sleep |
+| **Motivated** | ⚡ | High | Workouts, study sessions, hustle |
+| **Romantic** | 💖 | Medium | Dates, crushes, partners |
+| **Nostalgic** | 📻 | Medium | Childhood, old friends, old songs |
 
-### Multilingual Prompting & JSON Output
-Mood inputs are processed into structured JSON representations:
+The analysis returns a structured object:
 
 ```json
 {
@@ -92,33 +145,105 @@ Mood inputs are processed into structured JSON representations:
 }
 ```
 
-*Note: Keyword rules act as instantaneous fallbacks when LLM network latencies exceed 3 seconds. The fallback returns the same shape with `"source": "keyword"`.*
+### Stage 1: LLM (`backend/src/services/emotionService.js`)
 
----
+- **Model:** Gemini through its REST API, in JSON output mode at temperature 0.1.
+- **Prompt:** mood definitions, explicit rules (input may be in any of the three scripts; one to three moods, strongest first; exhaustion maps to Relaxed), and 12 few-shot examples from [`promptExamples.js`](backend/src/services/promptExamples.js). The examples cover all eight moods, all three scripts and the hard cases: negation, mixed feelings, a music request with no feeling word, and longing.
+- **Validation:** the reply is checked against the contract (allowed moods and levels, one to three moods, no duplicates). Anything that fails goes to stage 2.
+- **Timeout:** 3 seconds.
 
-## 4. Recommendation Engine & Scoring
+### Stage 2: rule-based fallback (`backend/src/services/keywordFallback.js`)
 
-Recommendations are calculated dynamically using a multi-factor weighting formula:
+A deterministic classifier that never throws and answers in about 0.1 ms.
 
-$$\text{Score}(s) = (w_1 \cdot \text{MoodMatch}) + (w_2 \cdot \text{LanguageMatch}) + (w_3 \cdot \text{FeedbackBoost})$$
+| Step | What it does |
+| --- | --- |
+| Normalisation | Unicode normalisation, Devanagari nukta removal (ख़ुशी = खुशी), lowercasing, apostrophe stripping; sentence punctuation and the danda become clause boundaries |
+| Lexicon | 775 terms (316 English, 312 Hinglish, 147 Devanagari) in 10 emotion cue groups mapped onto the 8 moods, in [`moodLexicon.js`](backend/src/data/moodLexicon.js) |
+| Matching | Longest phrase first; prefix terms (`frustrat*`); elongated words (`sooo`, `happyyy`); one intensifier allowed inside a phrase (`mann bilkul nahi lag raha`) |
+| Negation | Clause-aware: English negators act forwards, Hindi and Hinglish negators on both sides; idioms such as "can't stop smiling" are not negation; negated cues are dropped or flipped (`khush nahi hu` → Sad) |
+| Intensity | Intensifiers (`bahut`, `so`, `बहुत`), diminishers (`thoda`), repeated punctuation, elongation, repeated emojis |
+| Extras | 61 emoji cues and 10 context categories (work, studies, relationship, family, fitness and more) |
 
-### Default Weights
-- **$w_1 = 0.5$ (Mood Alignment):** Checks overlap between song's tagged moods and target mood.
-- **$w_2 = 0.3$ (Language Match):** Matches user profile preferred languages (`Hindi`, `English`, or both).
-- **$w_3 = 0.2$ (Feedback Boost):** Boosts tracks from artists or genres the user has marked with `like`.
+## Evaluation
 
-### Negative Filtering & Fail-safes
-- **Strict Dislike Exclusion:** Any song marked as `dislike` is filtered out immediately ($\text{Score} = -\infty$).
-- **Fallback Reservoir:** If external services or database queries fail, a local 20-track fail-safe pool is delivered so the user never encounters a blank screen or crash.
+The benchmark in [`backend/tests/hinglish_eval.json`](backend/tests/hinglish_eval.json) has **144 labelled sentences**: 48 each in English, Hindi (Devanagari) and Hinglish, 6 per mood per language. They are written the way people actually text, and the prompt's few-shot examples are kept separate from them; a test enforces this.
 
----
+| Engine | Top-1 accuracy | Macro-F1 | Latency | Target |
+| --- | --- | --- | --- | --- |
+| Keyword classifier alone | **71.5%** | 0.754 | p95 < 3 ms | Never fails, < 50 ms |
+| Full pipeline (Gemini + fallback) | pending | pending | pending | **≥ 80%**, < 3 s |
 
-## 5. Database Schema & Data Models
+When the keyword classifier finds at least one mood cue, it is right **95.1%** of the time. Most of its errors are sentences with no mood word at all ("rent is due and my salary hasn't come yet"), which is what the LLM is for. The full report, with per-language and per-mood results, a confusion matrix and an error analysis, is in [docs/evaluation.md](docs/evaluation.md).
+
+```bash
+cd backend
+npm run eval                 # keyword classifier report
+npm run eval -- --errors     # ... plus every misclassified sentence
+npm run eval:llm             # full pipeline (needs LLM_API_KEY)
+```
+
+## Recommendations
+
+Each candidate song is scored:
+
+$$\text{Score}(s) = 0.5 \cdot \text{MoodMatch} + 0.3 \cdot \text{LanguageMatch} + 0.2 \cdot \text{FeedbackBoost}$$
+
+| Factor | Value |
+| --- | --- |
+| MoodMatch | 1.0 if the mood is the song's first tag, 0.7 if it is a later tag; songs without the mood are not candidates |
+| LanguageMatch | 1 if the song's language is one of the user's preferred languages, else 0 |
+| FeedbackBoost | 1 if the user liked another song by the same artist, 0.5 for the same genre, else 0 |
+
+- Disliked songs are removed after scoring, so nothing can bring them back.
+- The language filter (Hindi, English or both) is strict.
+- Every song comes with a one-line reason, such as "Fits your Relaxed mood · you like Arijit Singh".
+- If the database is unreachable, a fixed pool of 20 songs ([`fallback_songs.json`](backend/src/data/fallback_songs.json): 10 Hindi, 10 English, every mood covered) is served, so the screen is never empty.
+
+## Architecture
+
+| Layer | Technology |
+| --- | --- |
+| Mobile app | React Native 0.74, Expo SDK 51, Expo Router, TypeScript (strict) |
+| Backend | Node.js 18+, Express 4 |
+| Database and auth | Supabase: Postgres, Auth, row-level security |
+| NLP | Gemini (JSON mode) with a rule-based multilingual fallback |
+| Playback | External YouTube links |
+
+```text
+Moodify/
+├── backend/
+│   ├── src/
+│   │   ├── server.js                 Express app, routes, error handler
+│   │   ├── config/                   Supabase clients, shared contract constants
+│   │   ├── controllers/              Mood and preferences handlers
+│   │   ├── middlewares/              Auth (Supabase JWT), request validation, errors
+│   │   ├── routes/                   /api/mood, /api/preferences
+│   │   ├── services/                 Gemini emotion service, keyword classifier, prompt examples
+│   │   ├── utils/mappers.js          The only snake_case <-> camelCase layer
+│   │   └── data/                     Song catalog, fallback pool, mood lexicon
+│   ├── scripts/                      evaluate.js (benchmark report), assignSongIds.js
+│   └── tests/                        Unit tests, benchmark, evaluation toolkit
+├── mobile/
+│   ├── app/                          Screens (Expo Router): (auth), (tabs), recommendations
+│   └── src/
+│       ├── components/               SongCard, MoodChip, FeedbackButtons, pickers
+│       ├── context/AuthContext.tsx   Session and onboarding state
+│       ├── hooks/                    useMood, useRecommendations
+│       ├── services/                 API client, Supabase client, mock backend
+│       └── types/index.ts            Shared request and response types
+├── supabase/migrations/              Database schema and row-level security
+└── docs/                             API contract, evaluation report, test plan
+```
+
+**App screens:** Login, Sign up and Onboarding (languages and genres); then Home (mood chips, recent entries), Mood AI (type a feeling, confirm the mood), Recommendations, My Music (liked songs), My Mood (weekly counts, history, delete) and Profile.
+
+### Data model
 
 ```mermaid
 erDiagram
     PROFILES ||--o{ MOOD_ENTRIES : logs
-    PROFILES ||--o{ SONG_FEEDBACK : provides
+    PROFILES ||--o{ SONG_FEEDBACK : gives
     SONGS ||--o{ SONG_FEEDBACK : receives
 
     PROFILES {
@@ -126,9 +251,7 @@ erDiagram
         text name
         text[] preferred_languages
         text[] genres
-        timestamp created_at
     }
-
     SONGS {
         uuid id PK
         text title
@@ -138,9 +261,7 @@ erDiagram
         text[] moods
         text energy
         text url
-        timestamp created_at
     }
-
     MOOD_ENTRIES {
         uuid id PK
         uuid user_id FK
@@ -151,293 +272,91 @@ erDiagram
         text confirmed_mood
         timestamp created_at
     }
-
     SONG_FEEDBACK {
         uuid id PK
         uuid user_id FK
         uuid song_id FK
         text type
-        timestamp created_at
     }
 ```
 
----
+Row-level security keeps every user's mood entries and feedback private. The backend uses the service role, so it also filters every query by the logged-in user.
 
-## 6. API Contract
+## API
 
-This section is the single source of truth for the API. The TypeScript types for every request and response live in [`mobile/src/types/index.ts`](mobile/src/types/index.ts). To change anything here, agree in the group first.
+All endpoints live under `/api`, need `Authorization: Bearer <Supabase access token>`, and return either `{ "data": ... }` or `{ "error": { "code", "message" } }`.
 
-Base path: `/api`  
-Auth: every endpoint needs `Authorization: Bearer <Supabase access token>`.
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /mood/analyze` | Free text in, mood analysis out |
+| `POST /mood/confirm` | Save the confirmed mood to history |
+| `GET /mood/history` | Recent entries and weekly counts |
+| `DELETE /mood/:id` | Delete one entry, or `all` |
+| `GET` / `PUT /preferences` | Read or save name, languages and genres |
+| `GET /recommendations` | Ranked songs for a mood and language |
+| `POST /feedback` | Like, dislike or skip a song |
+| `GET /feedback/liked` | Liked songs, newest first |
 
-### 6.1 Naming and allowed values
+The full contract (allowed values, request and response shapes, error codes, backend function signatures) is in **[docs/api.md](docs/api.md)**.
 
-All JSON keys are **camelCase** in every request and response. The database keeps snake_case; the backend converts between the two only in `backend/src/utils/mappers.js`.
+## Testing
 
-| Field | Allowed values |
-| :--- | :--- |
-| Mood (`confirmedMood`, `targetMoods`, a song's `moods`, the `mood` query) | `Happy`, `Sad`, `Angry`, `Stressed`, `Relaxed`, `Motivated`, `Romantic`, `Nostalgic` (Title Case, exactly these 8) |
-| `energy`, `intensity` | `low`, `medium`, `high` |
-| `emotion`, `context` | Free text, lowercase snake_case. Unknown: `neutral`, `general` |
-| Song `language` | `Hindi`, `English` |
-| `language` filter (query) | `Hindi`, `English`, `Both` |
-| Feedback `type` | `like`, `dislike`, `skip` |
-| Analysis `source` | `llm`, `keyword` |
-| Recommendation `source` | `db`, `fallback` |
-| Dates | ISO 8601 strings in UTC |
-| IDs | UUID strings |
-
-### 6.2 Response format
-
-Every endpoint returns exactly one of:
-
-```json
-{ "data": { } }
-{ "error": { "code": "VALIDATION_ERROR", "message": "text must be 1-500 characters" } }
+```bash
+cd backend && npm test          # 41 tests: classifier, emotion service, validation, mappers,
+                                # catalog integrity, benchmark accuracy floor
+cd mobile && npx tsc --noEmit   # strict TypeScript check of the whole app
+RUN_LLM_EVAL=1 npm test         # in backend/: also enforce the 80% target with Gemini
 ```
 
-| HTTP | `code` | When |
+End-to-end cases for real phones, with a tester assigned to each area, are in [docs/test-plan.md](docs/test-plan.md).
+
+## Project status
+
+*As of 15 November 2026.*
+
+**Done**
+- [x] Supabase schema with row-level security; 120-song catalog with stable ids; 20-song fallback pool
+- [x] Supabase JWT auth middleware, request validation, standard error envelope
+- [x] Gemini emotion service with 3 s timeout and keyword fallback
+- [x] Rule-based multilingual classifier (English, Hindi, Hinglish)
+- [x] 144-sentence benchmark and evaluation harness
+- [x] Login, sign-up and onboarding
+- [x] Home, Mood AI with mood confirmation, My Mood, My Music and Profile screens
+- [x] Recommendations screen and feedback buttons in the app
+
+**Remaining**
+- [ ] Recommendation and feedback endpoints (`/api/recommendations`, `/api/feedback`), song seed loader
+- [ ] Replace the placeholder song links with YouTube links
+- [ ] Full-pipeline evaluation against the 80% target
+- [ ] Backend deployment and an Android build
+- [ ] End-to-end testing on real phones
+
+### Success criteria
+
+| Metric | Target | How it is measured |
 | :--- | :--- | :--- |
-| 400 | `VALIDATION_ERROR` | A field is missing or has a value not allowed above |
-| 401 | `UNAUTHORIZED` | Token missing, expired or invalid |
-| 404 | `NOT_FOUND` | The mood entry or song does not exist, or is not yours |
-| 404 | `PROFILE_NOT_FOUND` | The user has not finished onboarding; the app opens onboarding |
-| 500 | `INTERNAL_ERROR` | Anything else. Never send stack traces |
+| Emotion detection accuracy | ≥ 80% | `npm run eval:llm` on the 144-sentence benchmark |
+| End-to-end time | < 10 s | From tapping submit to a playable song list |
+| Mood confirmation rate | ≥ 70% | Share of users who accept the detected mood without changing it |
+| Reliability | 0 crashes | Keyword fallback and fallback songs when a service fails |
 
-A failed LLM call is **not** an error: `/mood/analyze` still returns 200, with `"source": "keyword"`.
+## Team
 
-**Request validation.** Every route uses `validate('<schema>')` from `backend/src/middlewares/validate.js`, which sends the 400 above. Handlers read the cleaned input from `req.valid.body`, `req.valid.query` and `req.valid.params` (trimmed, numbers parsed, defaults filled, unknown fields dropped), never from `req.body`. Schemas: `analyzeMood`, `confirmMood`, `moodHistory`, `deleteMood`, `updatePreferences`, `recommendations`, `feedback`.
+| Member | Role |
+| --- | --- |
+| Aditya Kumar Yadav | NLP evaluation, API contract and QA |
+| Aditya Jha | Backend and LLM |
+| Niraj Chandekar | Recommendations and data |
+| Sanjani Kumari | Mobile: mood to music flow |
+| Hirannya Mhaisbadwe | Mobile: auth and dashboards |
 
-### 6.3 Endpoints
+## Contributing
 
-| Endpoint | Request | `data` in the response |
-| :--- | :--- | :--- |
-| `POST /mood/analyze` | `{ "text": "bahut stress ho raha hai" }` (1-500 characters after trimming) | `MoodAnalysisResult` |
-| `POST /mood/confirm` | `{ "text", "confirmedMood", "analysis" }` where `analysis` is the object `/mood/analyze` returned, unchanged | `{ "entry": MoodEntry }` |
-| `GET /mood/history?limit=20` | `limit` 1-100, default 20 | `{ "entries": MoodEntry[], "weeklyCounts": { "Happy": 2, ... } }`. Entries newest first; `weeklyCounts` covers the last 7 days and lists all 8 moods |
-| `DELETE /mood/:id` | `:id` is a UUID, or `all` | `{ "deleted": 1 }` |
-| `GET /preferences` | none | `UserProfile`, or 404 `PROFILE_NOT_FOUND` |
-| `PUT /preferences` | `{ "name": "Aditi", "preferredLanguages": ["Hindi"], "genres": ["Lo-Fi"] }` | `UserProfile` (creates the profile if missing) |
-| `GET /recommendations?mood=Relaxed&language=Both&limit=10` | `mood` required; `language` defaults to the profile's languages; `limit` 1-20, default 10 | `{ "songs": Song[], "source": "db" }`. Every song has `score` and `reason` |
-| `POST /feedback` | `{ "songId": "<uuid>", "type": "like" }` | `{ "songId", "type" }`. One row per user and song; a new tap replaces the old one |
-| `GET /feedback/liked` | none | `{ "songs": Song[] }`, newest like first |
+1. Branch from `main` with one branch per task: `feat/<area>`, `fix/<area>` or `docs/<area>`.
+2. Follow the contract in [docs/api.md](docs/api.md). Changes to it are agreed in the group first.
+3. Run `npm test` in `backend/` and `npx tsc --noEmit` in `mobile/` before opening a pull request.
+4. Open the pull request into `main`. Never commit `.env` files or keys.
 
-`/mood/confirm` only saves the entry. The Recommendations screen always loads songs itself with `GET /recommendations`, so songs come from one place.
+## License
 
-### 6.4 Backend function signatures
-
-```js
-// services/keywordFallback.js
-keywordFallback(text)  // -> MoodAnalysisResult. Synchronous, < 50 ms, never throws. source: 'keyword'
-
-// services/emotionService.js
-analyzeMood(text)      // -> Promise<MoodAnalysisResult>. Never rejects.
-                       //    Gemini first; keywordFallback on a 3 s timeout, an API error or invalid JSON
-
-// services/recommendationService.js
-getRecommendations({ userId, mood, language, limit = 10 })
-                       // -> Promise<{ songs, source: 'db' | 'fallback' }>. Never rejects
-
-// utils/scoring.js
-scoreSong(song, { mood, languages, likedArtists, likedGenres })  // -> { score, reason }
-```
-
-- `targetMoods` holds 1-3 of the 8 moods, strongest first. `targetMoods[0]` is the mood the app shows as detected.
-- If no keyword matches, the fallback returns `{ "emotion": "neutral", "energy": "medium", "intensity": "low", "context": "general", "targetMoods": ["Relaxed"], "source": "keyword" }`.
-
-### 6.5 Song catalog
-
-- Every song has a fixed UUID (UUID v5 from its original short id, see `backend/scripts/assignSongIds.js`). The id is the same in `songs.seed.json`, the database and the fallback pool.
-- Every song's `url` is a YouTube link, `https://www.youtube.com/watch?v=<id>`, from the official upload. The app opens it with `Linking.openURL(url)`.
-
----
-
-## 7. Mobile Screen Hierarchy
-
-Built using **Expo Router (File-based Routing)**:
-
-```
-app/
-├── _layout.tsx                     # Global Root Layout (Auth listener & theme)
-├── recommendations.tsx             # Modal / Stack: Ranked playlist recommendations
-├── (auth)/                         # Unauthenticated Flow
-│   ├── _layout.tsx
-│   ├── login.tsx                   # Email/Password Sign-In
-│   ├── signup.tsx                  # New User Registration
-│   └── onboarding.tsx              # Languages & Favorite Genres selection
-└── (tabs)/                         # Authenticated Main Navigation
-    ├── _layout.tsx                 # Bottom Navigation Tab Bar
-    ├── index.tsx                   # [Home] Quick mood chips & prompt launcher
-    ├── mood.tsx                    # [Mood AI] Natural language prompt input
-    ├── music.tsx                   # [My Music] Liked songs & past listening list
-    ├── history.tsx                 # [My Mood] Weekly mood analytics & logs
-    └── profile.tsx                 # [Profile] User preferences & account settings
-```
-
----
-
-## 8. Repository Directory Structure
-
-```text
-Moodify/
-├── README.md                                  # Complete product guide & documentation
-├── .gitignore                                 # Git ignore rules for node, expo, secrets
-├── supabase/
-│   └── migrations/
-│       └── 20261108000000_init_schema.sql     # PostgreSQL database schema & RLS rules
-│
-├── backend/                                   # Node.js + Express REST API
-│   ├── .env.example                           # Backend environment variables
-│   ├── package.json                           # Server dependencies
-│   ├── src/
-│   │   ├── server.js                          # Express entrypoint & middleware setup
-│   │   ├── config/                            # Supabase client & credentials
-│   │   ├── controllers/                       # Route request handlers
-│   │   ├── middlewares/                       # JWT validation & error handling
-│   │   ├── routes/                            # Modular route definitions
-│   │   ├── services/                          # LLM calls, keyword fallback, recommendation
-│   │   ├── utils/                             # Scoring formula algorithms
-│   │   └── data/
-│   │       ├── songs.seed.json                # 120 curated seed songs (60 Hindi, 60 English)
-│   │       └── fallback_songs.json            # Offline fallback songs
-│   └── tests/
-│       ├── hinglish_eval.json                 # Labelled Hinglish/Hindi/English test set
-│       └── emotion_detection.test.js          # Accuracy test runner
-│
-└── mobile/                                    # Expo React Native App
-    ├── .env.example                           # Mobile environment variables
-    ├── app.json                               # Expo app configuration
-    ├── package.json                           # Mobile app dependencies
-    ├── tsconfig.json                          # TypeScript configuration
-    ├── app/                                   # Expo Router file-based screens
-    └── src/
-        ├── components/                        # SongCard, MoodChip, FeedbackButtons
-        ├── constants/                         # Colors, supported moods, styles
-        ├── context/                           # AuthContext & Session management
-        ├── hooks/                             # useMood, useRecommendations hooks
-        ├── services/                          # API client & Supabase initialization
-        └── types/                             # TypeScript data interfaces
-```
-
----
-
-## 9. Getting Started & Installation
-
-### Prerequisites
-- **Node.js**: v18.0.0 or higher
-- **Package Manager**: `npm` or `pnpm`
-- **Mobile Client**: Expo Go installed on your smartphone, or Android Studio / Xcode Simulator
-- **Supabase**: A free Supabase project
-
----
-
-### Step 1: Database Setup
-1. Create a project at [supabase.com](https://supabase.com).
-2. Navigate to **SQL Editor** in the Supabase Dashboard.
-3. Open [`supabase/migrations/20261108000000_init_schema.sql`](file:///e:/Moodify/supabase/migrations/20261108000000_init_schema.sql), copy its content, and run it.
-4. Verify that the tables (`profiles`, `songs`, `mood_entries`, `song_feedback`) are created.
-
----
-
-### Step 2: Backend Setup
-```bash
-# Navigate to backend directory
-cd backend
-
-# Install dependencies
-npm install
-
-# Setup environment variables
-cp .env.example .env
-```
-
-Configure your `.env`:
-```env
-PORT=5000
-NODE_ENV=development
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-SUPABASE_ANON_KEY=your-supabase-anon-key
-LLM_PROVIDER=gemini # or openai
-LLM_API_KEY=your-gemini-or-openai-api-key
-LLM_MODEL=gemini-1.5-flash
-```
-
-Start the backend:
-```bash
-npm run dev
-```
-
----
-
-### Step 3: Mobile Setup
-```bash
-# Navigate to mobile directory
-cd mobile
-
-# Install dependencies
-npm install
-
-# Setup environment variables
-cp .env.example .env
-```
-
-Configure your `.env`:
-```env
-EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-EXPO_PUBLIC_API_BASE_URL=http://<YOUR_LOCAL_IP>:5000/api
-EXPO_PUBLIC_USE_MOCKS=false
-```
-
-Set `EXPO_PUBLIC_USE_MOCKS=true` to run the app without a backend. `mobile/src/services/mocks.ts` exports `mockFetch`, a drop-in for `fetch` that answers every endpoint in section 6.3 with the real status codes and envelopes. Put `#error` in mood text to simulate a 500, or `#fallback` to get `"source": "keyword"`.
-
-Start the Expo development server:
-```bash
-npx expo start
-```
-*Press `a` for Android Emulator, `i` for iOS Simulator, or scan the terminal QR code via the **Expo Go** app.*
-
----
-
-## 10. 2-Day MVP Development Tracker
-
-*Status as of 15 Nov 2026. Backend: 41 tests pass. App: TypeScript strict check passes.*
-
-### Day 1: Backend, AI & Data Pipeline
-- [x] Initial project scaffolding & unified directory tree
-- [x] Supabase PostgreSQL schema with RLS policies
-- [x] Curated 120-song seed catalog (60 Hindi, 60 English)
-- [x] Supabase JWT authentication middleware
-- [x] LLM Emotion Detection Service with Hinglish support (Gemini, 3 s timeout, keyword fallback)
-- [x] Keyword fallback rule engine (< 50ms fallback)
-- [ ] Recommendation scoring & dislike exclusion service (`/api/recommendations`, `/api/feedback` not yet merged)
-- [x] Hinglish test dataset (144 labelled samples, 3 languages) and evaluation harness ([docs/evaluation.md](docs/evaluation.md))
-- [ ] LLM pipeline reaches ≥ 80% accuracy on the benchmark (`npm run eval:llm`)
-
-### Day 2: Mobile UI, Integration & Polish
-- [x] Supabase Auth flow (Login, Sign-Up, Preferences Onboarding)
-- [x] Home Screen with quick mood chips & history teaser
-- [x] Mood AI screen with conversational text input & loading states
-- [x] Mood confirmation & manual mood correction modal
-- [ ] Recommendation results view with YouTube links (app screen done; needs the backend endpoint)
-- [ ] Like, dislike, and skip feedback recording (app side done; needs the backend endpoint)
-- [x] "My Mood" history dashboard with weekly distribution counts and delete
-- [ ] End-to-end integration testing & performance tuning (< 3s response), using [docs/test-plan.md](docs/test-plan.md)
-- [x] Profile screen: edit preferences and sign out
-
----
-
-## 11. Success Criteria & Metrics
-
-| Metric | Target Goal | Verification Method |
-| :--- | :--- | :--- |
-| **Emotion Detection Accuracy** | $\ge 80\%$ | `npm run eval:llm` on 144 labelled English / Hindi / Hinglish sentences (`backend/tests/hinglish_eval.json`) |
-| **End-to-End Latency** | $< 10$ seconds | Total time from prompt submission to playable song list |
-| **Model Confirmation Rate** | $\ge 70\%$ | Ratio of users accepting detected mood without editing |
-| **System Reliability** | 0 crashes | Graceful degradation to fallback rules and cached tracks upon API failure |
-
----
-
-## 📄 License
-This project is licensed under the [MIT License](file:///e:/Moodify/README.md).
+[MIT](https://opensource.org/licenses/MIT).

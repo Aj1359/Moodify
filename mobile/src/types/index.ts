@@ -53,7 +53,7 @@ export type WeeklyCounts = Record<SupportedMood, number>;
 
 // ---------------------------------------------------------------------------
 // API contract. Every response is { data } on success or { error } on failure.
-// See README section 6 for the full endpoint table.
+// See docs/api.md for the full endpoint table.
 // ---------------------------------------------------------------------------
 
 export type ApiErrorCode =

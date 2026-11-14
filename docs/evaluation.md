@@ -84,7 +84,7 @@ Rows are the gold mood, columns the predicted mood.
 | Romantic | 2 | · | · | · | 4 | · | 12 | · |
 | Nostalgic | · | · | · | · | 4 | · | · | 14 |
 
-The Relaxed column is the default: a sentence with no cue returns `Relaxed` by contract (README 6.4). That gives Relaxed high recall and low precision, and every other mood near-perfect precision.
+The Relaxed column is the default: a sentence with no cue returns `Relaxed` by contract ([docs/api.md](api.md)). That gives Relaxed high recall and low precision, and every other mood near-perfect precision.
 
 ## Error analysis
 
