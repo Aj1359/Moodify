@@ -111,7 +111,7 @@ npx expo start
 | `SUPABASE_SERVICE_ROLE_KEY` | `backend/.env` | Service role key. Secret: backend only, never in the app |
 | `SUPABASE_ANON_KEY` | `backend/.env` | Public anon key, used to verify user tokens |
 | `LLM_API_KEY` | `backend/.env` | Gemini key from [Google AI Studio](https://aistudio.google.com/app/apikey). Without it, every request uses the keyword classifier |
-| `LLM_MODEL` | `backend/.env` | Gemini model id, for example `gemini-2.5-flash` |
+| `LLM_MODEL` | `backend/.env` | Gemini model id. Default and recommended: `gemini-3.5-flash-lite` (the free tier of `gemini-2.5-flash` allows only 20 requests a day) |
 | `EXPO_PUBLIC_SUPABASE_URL` | `mobile/.env` | Same project URL |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | `mobile/.env` | Public anon key. The app never gets the service role key |
 | `EXPO_PUBLIC_API_BASE_URL` | `mobile/.env` | `http://localhost:5000/api` on a simulator; `http://<your laptop's LAN IP>:5000/api` on a phone |
@@ -151,9 +151,9 @@ The analysis returns a structured object:
 
 ### Stage 1: LLM (`backend/src/services/emotionService.js`)
 
-- **Model:** Gemini through its REST API, in JSON output mode at temperature 0.1.
+- **Model:** `gemini-3.5-flash-lite` by default (set `LLM_MODEL` to change it) through the Gemini REST API, in JSON output mode at temperature 0.1. Chosen for its free-tier quota and speed; see [Model choice](docs/evaluation.md#model-choice).
 - **Prompt:** mood definitions, explicit rules (input may be in any of the three scripts; one to three moods, strongest first; exhaustion maps to Relaxed), and 12 few-shot examples from [`promptExamples.js`](backend/src/services/promptExamples.js). The examples cover all eight moods, all three scripts and the hard cases: negation, mixed feelings, a music request with no feeling word, and longing.
-- **Validation:** the reply is checked against the contract (allowed moods and levels, one to three moods, no duplicates). Anything that fails goes to stage 2.
+- **Validation:** the reply is checked against the contract (allowed moods and levels, one to three moods, no duplicates); letter case and a stray ```` ```json ```` wrapper are tolerated. Anything else that fails goes to stage 2.
 - **Timeout:** 3 seconds.
 
 ### Stage 2: rule-based fallback (`backend/src/services/keywordFallback.js`)
@@ -175,10 +175,16 @@ The benchmark in [`backend/tests/hinglish_eval.json`](backend/tests/hinglish_eva
 
 | Engine | Top-1 accuracy | Macro-F1 | Latency | Target |
 | --- | --- | --- | --- | --- |
-| Keyword classifier alone | **71.5%** | 0.754 | p95 < 3 ms | Never fails, < 50 ms |
-| Full pipeline (Gemini + fallback) | pending | pending | pending | **≥ 80%**, < 3 s |
+| Keyword classifier alone | 71.5% | 0.754 | p95 < 3 ms | Never fails, < 50 ms |
+| **Full pipeline (Gemini + fallback)** | **97.2%** | **0.972** | p95 1.5 s | **≥ 80%**, < 3 s ✅ |
 
-When the keyword classifier finds at least one mood cue, it is right **95.1%** of the time. Most of its errors are sentences with no mood word at all ("rent is due and my salary hasn't come yet"), which is what the LLM is for. The full report, with per-language and per-mood results, a confusion matrix and an error analysis, is in [docs/evaluation.md](docs/evaluation.md).
+| Language | Keyword classifier | Full pipeline |
+| --- | --- | --- |
+| English | 64.6% | 97.9% |
+| Hindi (Devanagari) | 75.0% | 100% |
+| Hinglish (Romanised) | 75.0% | 93.8% |
+
+The LLM fixes 39 of the keyword classifier's 41 errors, mostly sentences with no mood word at all ("rent is due and my salary hasn't come yet"). Its own four mistakes are close calls (Happy vs Romantic, Sad vs Nostalgic) with the right mood second every time, so the top-3 hit rate is 100%. When the keyword classifier finds a mood cue it is right 95.1% of the time, which keeps the fallback dependable when Gemini is down. Per-mood results, confusion matrices, error analyses and the model comparison are in [docs/evaluation.md](docs/evaluation.md).
 
 ```bash
 cd backend
@@ -310,7 +316,7 @@ The full contract (allowed values, request and response shapes, error codes, bac
 ## Testing
 
 ```bash
-cd backend && npm test          # 76 tests: classifier, emotion service (with a mocked Gemini),
+cd backend && npm test          # 78 tests: classifier, emotion service (with a mocked Gemini),
                                 # validation, mappers, scoring, recommendations, feedback,
                                 # HTTP error envelopes, catalog integrity, benchmark accuracy floor
 cd mobile && npm run typecheck  # strict TypeScript check of the whole app
@@ -337,9 +343,9 @@ End-to-end cases for real phones, with a tester assigned to each area, are in [d
 - [x] Recommendation and feedback endpoints (`/api/recommendations`, `/api/feedback`), song seed loader
 - [x] YouTube links for all 120 songs
 - [x] JSON errors on every path (unknown routes, malformed bodies, unknown songs) and CI on every pull request
+- [x] Full-pipeline evaluation: 97.2% against the 80% target
 
 **Remaining**
-- [ ] Full-pipeline evaluation against the 80% target
 - [ ] Backend deployment and an Android build
 - [ ] End-to-end testing on real phones
 

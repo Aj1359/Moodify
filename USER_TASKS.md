@@ -2,7 +2,7 @@
 
 **Project:** Moodify, a multilingual (English, Hindi, Hinglish) mood-to-music recommendation app
 **Stack:** React Native (Expo Router) · Node.js 22 / Express · Supabase (Postgres, Auth, RLS) · Google Gemini
-**Last updated:** 16 November 2026 (after PR #10)
+**Last updated:** 16 November 2026 (LLM evaluation done)
 
 This file tracks who owns what and what is left. The decisions everyone builds against are in the Team Guide (PDF in the repo root) and the API contract in [docs/api.md](docs/api.md). If this file and those disagree, the guide and the contract win.
 
@@ -39,12 +39,13 @@ This file tracks who owns what and what is left. The decisions everyone builds a
 ### NLP evaluation, contract and QA: Aditya Kumar Yadav
 - [x] API contract (`docs/api.md`) and shared TypeScript types (`mobile/src/types`), plus request validation (`middlewares/validate.js`) and the snake_case ↔ camelCase mappers (`utils/mappers.js`).
 - [x] Rule-based multilingual classifier (`services/keywordFallback.js`): 775-term lexicon in English, Hindi and Hinglish; clause-aware negation; emoji cues; under 1 ms per call.
-- [x] 144-sentence trilingual benchmark and evaluation harness (`npm run eval`, `npm run eval:llm`): keyword baseline 71.5% top-1, 95.1% when a cue is found ([docs/evaluation.md](docs/evaluation.md)).
+- [x] 144-sentence trilingual benchmark and evaluation harness (`npm run eval`, `npm run eval:llm`): keyword baseline 71.5% top-1, 95.1% when a cue is found.
+- [x] Full-pipeline evaluation: **97.2%** top-1 against the 80% target, with error analysis and model comparison ([docs/evaluation.md](docs/evaluation.md)); default model switched to `gemini-3.5-flash-lite`.
 - [x] Mock backend for the app (`services/mocks.ts`), end-to-end test plan ([docs/test-plan.md](docs/test-plan.md)), README.
 - [x] Backend hardening: JSON errors on every path, database errors mapped to contract codes, Gemini parsing fixes.
 - [x] GitHub Actions CI: backend tests, keyword evaluation and mobile type check on every pull request.
 
-**Quality today:** 76 backend tests (75 pass; the Gemini benchmark is skipped without a key), strict TypeScript passes, CI is green.
+**Quality today:** 78 backend tests (77 pass; the live Gemini benchmark is skipped without a key), strict TypeScript passes, CI is green, LLM pipeline at 97.2% on the benchmark.
 
 ---
 
@@ -55,9 +56,9 @@ The order matters: rows marked *needs* wait on the step they name.
 ### Aditya Jha
 | # | Task | Details |
 | :--- | :--- | :--- |
-| 1 | Share the Gemini key for local evaluation | Put it in `backend/.env` as `LLM_API_KEY` (`LLM_MODEL=gemini-2.5-flash`). Never commit it. |
+| 1 | ~~Share the Gemini key for local evaluation~~ | Done. Keep `LLM_MODEL=gemini-3.5-flash-lite`: the `gemini-2.5-flash` free tier allows only 20 requests a day. |
 | 2 | Set up the real Supabase project | Run the migration, then `npm run seed` to load the 120 songs. |
-| 3 | Tune the prompt after the first LLM run | *Needs #1 of Aditya Kumar Yadav.* Fix the misclassified cases by improving rules and examples; never copy benchmark sentences into the prompt. |
+| 3 | Prompt tuning (optional) | The pipeline scores 97.2%, above the 80% target. Two of the four errors are Happy vs Romantic; a general rule such as "a happy feeling about a specific person or date is Romantic" may fix them. Never copy benchmark sentences into the prompt. |
 | 4 | Record the demo video | *Needs the deployed backend and the Android build.* |
 
 ### Niraj Chandekar
@@ -83,7 +84,7 @@ The order matters: rows marked *needs* wait on the step they name.
 ### Aditya Kumar Yadav
 | # | Task | Details |
 | :--- | :--- | :--- |
-| 1 | LLM evaluation and error analysis | *Needs the Gemini key.* Run `npm run eval:llm`, send the misclassified sentences for prompt tuning, re-run, and report both runs against the 80% target in `docs/evaluation.md` and the README. |
+| 1 | ~~LLM evaluation and error analysis~~ | Done: 97.2% top-1, macro-F1 0.972, p95 1.5 s ([docs/evaluation.md](docs/evaluation.md)). Re-run only if the prompt changes. |
 | 2 | End-to-end test session on real phones | *Needs the deployed backend and the build.* Run [docs/test-plan.md](docs/test-plan.md) with swapped testers; file bugs to owners. |
 | 3 | Report chapter: NLP methodology and evaluation | Pipeline, classifier design, benchmark, results, error analysis. |
 | 4 | Slide deck | Collect everyone's slides into one deck. |
@@ -116,9 +117,8 @@ These came up but are not part of this release. They stay listed so they are not
 
 ## 5. Next steps, in order
 
-1. **Aditya Jha:** Gemini key to Aditya Kumar Yadav; Supabase project set up and seeded.
-2. **Aditya Kumar Yadav:** first LLM evaluation run → misclassified list to Aditya Jha.
+1. **Aditya Jha:** Supabase project set up and seeded. (LLM evaluation is done: 97.2%.)
+2. **Aditya Jha (optional):** prompt rule for Happy vs Romantic; **Aditya Kumar Yadav** re-runs the evaluation if the prompt changes.
 3. **Niraj:** deploy the backend. **Hirannya:** Android build. **Sanjani:** app on the real backend.
 4. **Everyone:** test session from the test plan; owners fix their bugs.
-5. **Aditya Jha:** prompt tuning → **Aditya Kumar Yadav:** second LLM run and final numbers.
-6. **Aditya Jha:** demo video. **Niraj:** report. **Aditya Kumar Yadav:** slides, README, `v1.0` tag.
+5. **Aditya Jha:** demo video. **Niraj:** report. **Aditya Kumar Yadav:** slides, README, `v1.0` tag.

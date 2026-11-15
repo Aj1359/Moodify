@@ -1,15 +1,15 @@
 # Mood Detection Evaluation
 
-Status: keyword fallback evaluated on 2026-11-12. `emotionService.js` is merged; the LLM pipeline run needs a Gemini key in `backend/.env` (`npm run eval:llm`).
+Status: keyword fallback evaluated on 2026-11-12; full LLM pipeline evaluated on 2026-11-16 with `gemini-3.5-flash-lite`. **The 80% target is met.**
 
 ## Summary
 
-| Engine | Top-1 accuracy | Macro-F1 | Latency (p95) | Target |
-| --- | --- | --- | --- | --- |
-| Keyword fallback (rule-based) | **71.5%** | 0.754 | < 3 ms | < 50 ms, never fails |
-| LLM pipeline (Gemini + fallback) | pending | pending | pending | **≥ 80%** accuracy, < 3 s |
+| Engine | Top-1 accuracy | Top-3 hit rate | Macro-F1 | Latency (p95) | Target |
+| --- | --- | --- | --- | --- | --- |
+| Keyword fallback (rule-based) | 71.5% | 72.9% | 0.754 | < 3 ms | < 50 ms, never fails |
+| **LLM pipeline (Gemini + fallback)** | **97.2%** | **100%** | **0.972** | 1.5 s | **≥ 80%** accuracy, < 3 s |
 
-When the keyword fallback finds at least one mood cue, it is right **95.1%** of the time (98 of 103 sentences). Of its 41 errors, 36 are sentences with no mood word at all, which need the LLM.
+The LLM fixes 39 of the keyword fallback's 41 errors, including every sentence that has no mood word. All four of its own mistakes still list the gold mood second. When the keyword fallback finds at least one mood cue, it is right **95.1%** of the time (98 of 103 sentences), so it remains a reliable safety net when Gemini is slow or down.
 
 ## Benchmark
 
@@ -36,7 +36,7 @@ npm run eval:llm                           # full LLM pipeline report (needs LLM
 RUN_LLM_EVAL=1 npm test                    # enforce the 80% target in the test suite
 ```
 
-`npm run eval:llm` waits 4 s between calls (about 10 minutes for 144 items) to stay under free-tier rate limits; change it with `--delay <ms>`. Answers that fell back to keywords are counted and reported separately.
+`npm run eval:llm` waits 4 s between calls (about 12 minutes for 144 items) to stay under free-tier rate limits; change it with `--delay <ms>`. Answers that fell back to keywords are counted and reported separately. Pick the model with `LLM_MODEL=<id> npm run eval:llm`; the free tier's daily limit is per model (see [Model choice](#model-choice)).
 
 ## Keyword fallback results
 
@@ -114,8 +114,55 @@ Accuracy went from 69.4% to 71.5%. Each fix has a regression test in `keywordFal
 
 ## LLM pipeline results
 
-Pending. After `emotionService.js` is merged, run `npm run eval:llm -- --errors --markdown ../docs/llm-eval.md` and record the numbers in the summary table above. Then:
+Run on 2026-11-16: `gemini-3.5-flash-lite`, JSON mode, temperature 0.1, the few-shot prompt from `promptExamples.js`, 3 s timeout with keyword fallback. 143 of 144 answers came from the LLM; one Gemini 503 fell back to keywords, which got it right. The generated report is [llm-eval.md](llm-eval.md).
 
-1. Compare the LLM's per-language accuracy with the fallback's, especially on Hindi (Devanagari).
-2. Send the misclassified sentences to the prompt owner for tuning. Never add benchmark sentences to the prompt.
-3. Re-run after tuning and report both runs.
+| Metric | Value |
+| --- | --- |
+| Top-1 accuracy | **97.2%** (140 / 144) |
+| Top-3 hit rate | 100% |
+| Macro-F1 | 0.972 |
+| Latency p50 / p95 / max | 1.14 s / 1.55 s / 1.81 s (no call reached the 3 s timeout) |
+
+### Against the keyword fallback
+
+| Language | Keyword fallback | LLM pipeline | Change |
+| --- | --- | --- | --- |
+| English | 64.6% | 97.9% | +33.3 pts |
+| Hindi (Devanagari) | 75.0% | **100%** | +25.0 pts |
+| Hinglish (Romanised) | 75.0% | 93.8% | +18.8 pts |
+| **All** | 71.5% | **97.2%** | **+25.7 pts** |
+
+- **Fixed by the LLM:** 39 of the 41 keyword errors, including all 37 sentences where the fallback found no usable cue (for example "rent is due and my salary hasn't come yet", Stressed). These need world knowledge, which is what the LLM adds.
+- **Broken by the LLM:** 2 sentences the keyword fallback had right (en-37, hg-07, below).
+- **Wrong in both:** 2 (hg-11, hg-39).
+- Motivated recall goes from 50% to 100%: plans like "5am run before class" are understood without a feeling word.
+- English gains the most, because English speakers in the benchmark state situations rather than feelings.
+
+### LLM error analysis
+
+| Id | Text | Gold | LLM answer | Why |
+| --- | --- | --- | --- | --- |
+| en-37 | she said yes!! first date this saturday | Romantic | Happy, Romantic | Joy dominates the surface; the romantic context is second |
+| hg-39 | usse baat karke dil khush ho jata hai | Romantic | Happy, Romantic | "dil khush" is literally "heart happy"; the keyword fallback made the same mistake |
+| hg-11 | ghar ki bahut yaad aa rahi hai hostel mein | Sad | Nostalgic, Sad | Homesickness is both; the label is debatable (also flagged in the keyword analysis) |
+| hg-07 | aaj mann bilkul nahi lag raha kisi cheez mein | Sad | Relaxed, Sad | Read as apathy (low energy) rather than sadness |
+
+Three of the four are Happy-vs-Romantic or Sad-vs-Nostalgic, pairs that overlap in meaning, and the gold mood is second every time. The app shows `targetMoods[0]` and lets the user change it, so these cost the user one tap. Hinglish is the weakest language (93.8%) because three of the four errors are Hinglish idioms.
+
+**Prompt tuning.** At 97.2% no tuning is needed for the target. One rule would address two errors: "a happy feeling about a specific person or date is Romantic". It must be phrased in general terms; benchmark sentences are never copied into the prompt.
+
+### Model choice
+
+| Model | Result | Notes |
+| --- | --- | --- |
+| `gemini-2.5-flash` | 19 / 19 correct, then rate-limited | The free tier allows **20 requests per day** per model, so the full run could not finish; a live demo would exhaust it within minutes. Thinking is on by default and pushed some replies past 3 s; `emotionService.js` now sends `thinkingBudget: 0` for this model. |
+| **`gemini-3.5-flash-lite`** | **140 / 144 correct** | No rate limiting across 144 calls; no thinking overhead; p95 1.5 s. **Now the default.** |
+| `gemini-3.8-flash` | Not usable | One test call took 172 s |
+| `gemini-1.5-flash`, `gemini-2.0-flash`, `gemini-2.5-flash-lite` | Unavailable | The API answers 404 (retired, or closed to new keys) |
+
+### Limitations
+
+- One run at temperature 0.1. Expect a point or two of variation between runs.
+- The benchmark was written and labelled by the team, one gold label per sentence. Several sentences carry two moods (homesickness is Sad and Nostalgic), which top-1 accuracy counts as wrong.
+- 144 sentences: one sentence is 0.7 points of accuracy, so per-mood figures (18 sentences each) are coarse.
+- The free tier's quotas change over time; for the deployed app, check the limits on the AI Studio rate-limit page before a demo.
