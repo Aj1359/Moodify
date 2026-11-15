@@ -5,7 +5,7 @@
 
 [![CI](https://github.com/Aj1359/Moodify/actions/workflows/ci.yml/badge.svg)](https://github.com/Aj1359/Moodify/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-22+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Expo](https://img.shields.io/badge/Expo-SDK_51-000020?logo=expo&logoColor=white)](https://expo.dev/)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres_%26_Auth-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com/)
 [![Gemini](https://img.shields.io/badge/Gemini-LLM-8E75B2?logo=googlegemini&logoColor=white)](https://ai.google.dev/)
@@ -57,7 +57,7 @@ A failed LLM call never surfaces as an error: the keyword classifier returns the
 
 ## Quick start
 
-You need **Node.js 18+** and the **Expo Go** app on your phone, or an Android or iOS simulator.
+You need **Node.js 22+** (the Supabase client uses its built-in WebSocket) and the **Expo Go** app on your phone, or an Android or iOS simulator.
 
 ### Option A: run the app on mock data (no backend, no keys)
 
@@ -209,7 +209,7 @@ $$\text{Score}(s) = 0.5 \cdot \text{MoodMatch} + 0.3 \cdot \text{LanguageMatch} 
 | Layer | Technology |
 | --- | --- |
 | Mobile app | React Native 0.74, Expo SDK 51, Expo Router, TypeScript (strict) |
-| Backend | Node.js 18+, Express 4 |
+| Backend | Node.js 22+, Express 4 |
 | Database and auth | Supabase: Postgres, Auth, row-level security |
 | NLP | Gemini (JSON mode) with a rule-based multilingual fallback |
 | Playback | External YouTube links |
