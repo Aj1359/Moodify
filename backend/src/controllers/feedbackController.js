@@ -1,7 +1,8 @@
 /**
  * Feedback Controller (Niraj Chandekar).
  * Handles:
- * - POST /api/feedback: like, dislike, or skip a song (upsert on user_id, song_id)
+ * - POST /api/feedback: like, dislike, or skip a song (upsert on user_id, song_id;
+ *   404 NOT_FOUND for an unknown song)
  * - GET /api/feedback/liked: list songs liked by the user, newest first
  */
 const { supabase } = require('../config/supabase');
@@ -14,7 +15,9 @@ const { feedbackToRow, rowToFeedback, rowToSong } = require('../utils/mappers');
 async function postFeedback(req, res, next) {
   try {
     const userId = req.user.id;
-    const row = feedbackToRow(userId, req.valid.body);
+    // Stamp every tap: the upsert keeps one row per (user, song), and /feedback/liked
+    // orders by created_at, so a re-like must move the song back to the top.
+    const row = { ...feedbackToRow(userId, req.valid.body), created_at: new Date().toISOString() };
 
     const { data, error } = await supabase
       .from('song_feedback')
@@ -23,7 +26,8 @@ async function postFeedback(req, res, next) {
       .single();
 
     if (error) {
-      console.error('Error recording song feedback:', error.message);
+      // An unknown songId or a missing profile is a foreign-key error;
+      // errorHandler turns it into 404 NOT_FOUND / PROFILE_NOT_FOUND.
       return next(error);
     }
 
