@@ -31,6 +31,14 @@ ${formatFewShot()}
 `;
 
 /**
+ * Gemini 2.5 Flash models accept thinkingBudget 0; Pro models and older ones do not.
+ * @param {string} model
+ */
+function supportsThinkingOff(model) {
+  return /gemini-2\.5-flash/i.test(model);
+}
+
+/**
  * Remove a ```json ... ``` wrapper if the model added one despite JSON mode.
  * @param {string} raw
  */
@@ -87,7 +95,7 @@ function validateAndCleanLlmOutput(parsed) {
  */
 async function analyzeMood(text) {
   const apiKey = process.env.LLM_API_KEY;
-  const model = process.env.LLM_MODEL || 'gemini-2.5-flash';
+  const model = process.env.LLM_MODEL || 'gemini-3.5-flash-lite';
 
   if (!apiKey) {
     return keywordFallback(text);
@@ -113,6 +121,9 @@ async function analyzeMood(text) {
       generationConfig: {
         temperature: 0.1,
         responseMimeType: 'application/json',
+        // Gemini 2.5 Flash "thinks" by default, which pushes replies past the 3 s budget.
+        // A short classification does not need it, so turn it off where the model allows.
+        ...(supportsThinkingOff(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
       },
     };
 
@@ -171,6 +182,7 @@ module.exports = {
   analyzeMood,
   validateAndCleanLlmOutput,
   stripCodeFence,
+  supportsThinkingOff,
   SYSTEM_PROMPT,
 };
 
