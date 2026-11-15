@@ -3,6 +3,7 @@
 > **Feel it. Express it. Play it.**
 > Type how you feel in English, Hindi or Hinglish, and get a ranked list of Hindi and English songs that fit, in under 10 seconds.
 
+[![CI](https://github.com/Aj1359/Moodify/actions/workflows/ci.yml/badge.svg)](https://github.com/Aj1359/Moodify/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Expo](https://img.shields.io/badge/Expo-SDK_51-000020?logo=expo&logoColor=white)](https://expo.dev/)
@@ -87,8 +88,11 @@ To run Supabase locally in Docker instead, use `npx supabase start` from the rep
 cd backend
 npm install
 cp .env.example .env        # fill in the values below
+npm run seed                # load the 120-song catalog into Supabase (safe to re-run)
 npm run dev                 # http://localhost:5000/health should return {"status":"ok"}
 ```
+
+Without Supabase credentials, `/api/recommendations` still answers from the built-in 20-song fallback pool. Try it with `node scripts/demoRecommendations.js`.
 
 **3. Mobile app**
 
@@ -214,16 +218,19 @@ $$\text{Score}(s) = 0.5 \cdot \text{MoodMatch} + 0.3 \cdot \text{LanguageMatch} 
 Moodify/
 ├── backend/
 │   ├── src/
-│   │   ├── server.js                 Express app, routes, error handler
+│   │   ├── app.js                    Express app, routes, JSON 404 and error handler
+│   │   ├── server.js                 Starts the app on PORT
 │   │   ├── config/                   Supabase clients, shared contract constants
-│   │   ├── controllers/              Mood and preferences handlers
+│   │   ├── controllers/              Mood, preferences, recommendation and feedback handlers
 │   │   ├── middlewares/              Auth (Supabase JWT), request validation, errors
-│   │   ├── routes/                   /api/mood, /api/preferences
-│   │   ├── services/                 Gemini emotion service, keyword classifier, prompt examples
-│   │   ├── utils/mappers.js          The only snake_case <-> camelCase layer
+│   │   ├── routes/                   /api/mood, /api/preferences, /api/recommendations, /api/feedback
+│   │   ├── services/                 Gemini emotion service, keyword classifier, prompt examples,
+│   │   │                             recommendation engine
+│   │   ├── utils/                    mappers.js (the only snake_case <-> camelCase layer), scoring.js
 │   │   └── data/                     Song catalog, fallback pool, mood lexicon
-│   ├── scripts/                      evaluate.js (benchmark report), assignSongIds.js
-│   └── tests/                        Unit tests, benchmark, evaluation toolkit
+│   ├── scripts/                      evaluate.js (benchmark report), seedSongs.js, demoRecommendations.js,
+│   │                                 assignSongIds.js
+│   └── tests/                        Unit and HTTP tests, benchmark, evaluation toolkit
 ├── mobile/
 │   ├── app/                          Screens (Expo Router): (auth), (tabs), recommendations
 │   └── src/
@@ -232,6 +239,7 @@ Moodify/
 │       ├── hooks/                    useMood, useRecommendations
 │       ├── services/                 API client, Supabase client, mock backend
 │       └── types/index.ts            Shared request and response types
+├── .github/workflows/ci.yml          Tests and type check on every pull request
 ├── supabase/migrations/              Database schema and row-level security
 └── docs/                             API contract, evaluation report, test plan
 ```
@@ -302,17 +310,20 @@ The full contract (allowed values, request and response shapes, error codes, bac
 ## Testing
 
 ```bash
-cd backend && npm test          # 41 tests: classifier, emotion service, validation, mappers,
-                                # catalog integrity, benchmark accuracy floor
-cd mobile && npx tsc --noEmit   # strict TypeScript check of the whole app
+cd backend && npm test          # 76 tests: classifier, emotion service (with a mocked Gemini),
+                                # validation, mappers, scoring, recommendations, feedback,
+                                # HTTP error envelopes, catalog integrity, benchmark accuracy floor
+cd mobile && npm run typecheck  # strict TypeScript check of the whole app
 RUN_LLM_EVAL=1 npm test         # in backend/: also enforce the 80% target with Gemini
 ```
+
+GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs the backend tests, the keyword evaluation and the mobile type check on every pull request and every push to `main`. No secrets are needed: Supabase and Gemini are stubbed or skipped in tests.
 
 End-to-end cases for real phones, with a tester assigned to each area, are in [docs/test-plan.md](docs/test-plan.md).
 
 ## Project status
 
-*As of 15 November 2026.*
+*As of 16 November 2026.*
 
 **Done**
 - [x] Supabase schema with row-level security; 120-song catalog with stable ids; 20-song fallback pool
@@ -323,10 +334,11 @@ End-to-end cases for real phones, with a tester assigned to each area, are in [d
 - [x] Login, sign-up and onboarding
 - [x] Home, Mood AI with mood confirmation, My Mood, My Music and Profile screens
 - [x] Recommendations screen and feedback buttons in the app
+- [x] Recommendation and feedback endpoints (`/api/recommendations`, `/api/feedback`), song seed loader
+- [x] YouTube links for all 120 songs
+- [x] JSON errors on every path (unknown routes, malformed bodies, unknown songs) and CI on every pull request
 
 **Remaining**
-- [ ] Recommendation and feedback endpoints (`/api/recommendations`, `/api/feedback`), song seed loader
-- [ ] Replace the placeholder song links with YouTube links
 - [ ] Full-pipeline evaluation against the 80% target
 - [ ] Backend deployment and an Android build
 - [ ] End-to-end testing on real phones

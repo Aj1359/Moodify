@@ -33,11 +33,14 @@ Every endpoint returns exactly one of:
 
 | HTTP | `code` | When |
 | :--- | :--- | :--- |
-| 400 | `VALIDATION_ERROR` | A field is missing or has a value not allowed above |
+| 400 | `VALIDATION_ERROR` | A field is missing or has a value not allowed above, or the body is not valid JSON |
+| 413 | `VALIDATION_ERROR` | The body is larger than 16 kB |
 | 401 | `UNAUTHORIZED` | Token missing, expired or invalid |
-| 404 | `NOT_FOUND` | The mood entry or song does not exist, or is not yours |
+| 404 | `NOT_FOUND` | The mood entry or song does not exist, or is not yours; or the route does not exist |
 | 404 | `PROFILE_NOT_FOUND` | The user has not finished onboarding; the app opens onboarding |
 | 500 | `INTERNAL_ERROR` | Anything else. Never send stack traces |
+
+Controllers pass database errors to `next(err)`; `backend/src/middlewares/errorHandler.js` maps them. A foreign-key error on `song_id` (for example `POST /feedback` with an unknown song) becomes `NOT_FOUND`, and one on `user_id` (saving a mood or feedback before onboarding) becomes `PROFILE_NOT_FOUND`. Routes under `/api/mood`, `/api/preferences`, `/api/recommendations` and `/api/feedback` check the token first, so an unknown path there answers 401 before 404.
 
 A failed LLM call is **not** an error: `/mood/analyze` still returns 200, with `"source": "keyword"`.
 
@@ -54,7 +57,7 @@ A failed LLM call is **not** an error: `/mood/analyze` still returns 200, with `
 | `GET /preferences` | none | `UserProfile`, or 404 `PROFILE_NOT_FOUND` |
 | `PUT /preferences` | `{ "name": "Aditi", "preferredLanguages": ["Hindi"], "genres": ["Lo-Fi"] }` | `UserProfile` (creates the profile if missing) |
 | `GET /recommendations?mood=Relaxed&language=Both&limit=10` | `mood` required; `language` defaults to the profile's languages; `limit` 1-20, default 10 | `{ "songs": Song[], "source": "db" }`. Every song has `score` and `reason` |
-| `POST /feedback` | `{ "songId": "<uuid>", "type": "like" }` | `{ "songId", "type" }`. One row per user and song; a new tap replaces the old one |
+| `POST /feedback` | `{ "songId": "<uuid>", "type": "like" }` | `{ "songId", "type" }`. One row per user and song; a new tap replaces the old one and its time. 404 `NOT_FOUND` for an unknown song |
 | `GET /feedback/liked` | none | `{ "songs": Song[] }`, newest like first |
 
 `/mood/confirm` only saves the entry. The Recommendations screen always loads songs itself with `GET /recommendations`, so songs come from one place.

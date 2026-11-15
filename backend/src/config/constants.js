@@ -55,6 +55,7 @@ const LIMITS = Object.freeze({
   RECOMMENDATIONS_DEFAULT: 10,
   RECOMMENDATIONS_MAX: 20,
   LLM_TIMEOUT_MS: 3000,
+  JSON_BODY_LIMIT: '16kb', // largest valid body (POST /mood/confirm) is under 2 kB
 });
 
 const ERROR_CODES = Object.freeze({

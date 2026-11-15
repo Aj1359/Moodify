@@ -13,6 +13,19 @@ const { rowToSong } = require('../utils/mappers');
 const { scoreSong } = require('../utils/scoring');
 const songsCatalog = require('../data/songs.seed.json');
 const fallbackPool = require('../data/fallback_songs.json');
+const { SONG_LANGUAGES } = require('../config/constants');
+
+/**
+ * The languages a request allows: the explicit filter, or the profile's languages when it is omitted.
+ * @param {'Hindi'|'English'|'Both'|undefined} language
+ * @param {string[]} [profileLanguages]
+ * @returns {string[]}
+ */
+function resolveLanguages(language, profileLanguages = SONG_LANGUAGES) {
+  if (language === 'Hindi' || language === 'English') return [language];
+  if (language === 'Both') return [...SONG_LANGUAGES];
+  return [...profileLanguages];
+}
 
 // Fast in-memory index of seed songs by id
 const catalogById = new Map(songsCatalog.map((s) => [s.id, s]));
@@ -89,7 +102,7 @@ async function getRecommendations({ userId, mood, language, limit = 10 }) {
     if (!hasSupabaseConfig) {
       return getFallbackRecommendations({
         mood,
-        languages: language === 'Hindi' ? ['Hindi'] : language === 'English' ? ['English'] : ['Hindi', 'English'],
+        languages: resolveLanguages(language),
         limit,
       });
     }
@@ -116,17 +129,7 @@ async function getRecommendations({ userId, mood, language, limit = 10 }) {
     }
 
     // 2. Determine allowed languages for filtering
-    let allowedLanguages;
-    if (language === 'Hindi') {
-      allowedLanguages = ['Hindi'];
-    } else if (language === 'English') {
-      allowedLanguages = ['English'];
-    } else if (language === 'Both') {
-      allowedLanguages = ['Hindi', 'English'];
-    } else {
-      // Default to profile's languages
-      allowedLanguages = profileLanguages;
-    }
+    const allowedLanguages = resolveLanguages(language, profileLanguages);
 
     // 3. Fetch user feedback (likes, dislikes) to apply boost and exclude dislikes
     const dislikedSongIds = new Set();
@@ -218,7 +221,7 @@ async function getRecommendations({ userId, mood, language, limit = 10 }) {
     console.warn('⚠️ Exception in getRecommendations, serving fallback:', err.message);
     return getFallbackRecommendations({
       mood,
-      languages: language === 'Hindi' ? ['Hindi'] : language === 'English' ? ['English'] : ['Hindi', 'English'],
+      languages: resolveLanguages(language),
       limit,
     });
   }
@@ -227,5 +230,6 @@ async function getRecommendations({ userId, mood, language, limit = 10 }) {
 module.exports = {
   getRecommendations,
   getFallbackRecommendations,
+  resolveLanguages,
 };
 

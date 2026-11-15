@@ -62,3 +62,12 @@ test('getRecommendations: handles all 8 supported moods', async () => {
   }
 });
 
+
+test('resolveLanguages: explicit filter wins, otherwise the profile languages', () => {
+  const { resolveLanguages } = require('../src/services/recommendationService');
+  assert.deepEqual(resolveLanguages('Hindi', ['English']), ['Hindi']);
+  assert.deepEqual(resolveLanguages('English'), ['English']);
+  assert.deepEqual(resolveLanguages('Both', ['Hindi']), ['Hindi', 'English']);
+  assert.deepEqual(resolveLanguages(undefined, ['English']), ['English']);
+  assert.deepEqual(resolveLanguages(undefined), ['Hindi', 'English']);
+});

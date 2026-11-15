@@ -31,13 +31,24 @@ ${formatFewShot()}
 `;
 
 /**
+ * Remove a ```json ... ``` wrapper if the model added one despite JSON mode.
+ * @param {string} raw
+ */
+function stripCodeFence(raw) {
+  return raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+}
+
+/**
  * Validates and cleans the parsed LLM result according to the contract shape.
  * Returns null if validation fails.
  */
 function validateAndCleanLlmOutput(parsed) {
   if (!parsed || typeof parsed !== 'object') return null;
 
-  const { emotion, energy, intensity, context, targetMoods } = parsed;
+  const { emotion, context, targetMoods } = parsed;
+  // Accept "Low" / "happy" style casing: the meaning is right, only the case is off
+  const energy = typeof parsed.energy === 'string' ? parsed.energy.trim().toLowerCase() : parsed.energy;
+  const intensity = typeof parsed.intensity === 'string' ? parsed.intensity.trim().toLowerCase() : parsed.intensity;
 
   if (typeof emotion !== 'string' || !emotion.trim()) return null;
   if (!LEVELS.includes(energy)) return null;
@@ -48,13 +59,16 @@ function validateAndCleanLlmOutput(parsed) {
     return null;
   }
 
-  // Verify all moods are valid
+  // Map every mood to its contract spelling; any unknown mood rejects the whole answer
+  const canonicalMoods = [];
   for (const m of targetMoods) {
-    if (!MOODS.includes(m)) return null;
+    const match = typeof m === 'string' && MOODS.find((mood) => mood.toLowerCase() === m.trim().toLowerCase());
+    if (!match) return null;
+    canonicalMoods.push(match);
   }
 
   // Deduplicate moods while preserving order
-  const uniqueMoods = [...new Set(targetMoods)];
+  const uniqueMoods = [...new Set(canonicalMoods)];
 
   return {
     emotion: emotion.trim().toLowerCase().replace(/\s+/g, '_'),
@@ -73,7 +87,7 @@ function validateAndCleanLlmOutput(parsed) {
  */
 async function analyzeMood(text) {
   const apiKey = process.env.LLM_API_KEY;
-  const model = process.env.LLM_MODEL || 'gemini-1.5-flash';
+  const model = process.env.LLM_MODEL || 'gemini-2.5-flash';
 
   if (!apiKey) {
     return keywordFallback(text);
@@ -83,7 +97,8 @@ async function analyzeMood(text) {
   const timeoutId = setTimeout(() => controller.abort(), LIMITS.LLM_TIMEOUT_MS);
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    // The key goes in a header, not the URL, so it never appears in logs or error messages
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
     const requestBody = {
       systemInstruction: {
@@ -105,6 +120,7 @@ async function analyzeMood(text) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
       },
       body: JSON.stringify(requestBody),
       signal: controller.signal,
@@ -127,7 +143,7 @@ async function analyzeMood(text) {
 
     let parsed;
     try {
-      parsed = JSON.parse(candidateText.trim());
+      parsed = JSON.parse(stripCodeFence(candidateText));
     } catch (parseErr) {
       console.warn('Failed to parse Gemini output as JSON:', parseErr.message);
       return keywordFallback(text);
@@ -153,6 +169,8 @@ async function analyzeMood(text) {
 
 module.exports = {
   analyzeMood,
+  validateAndCleanLlmOutput,
+  stripCodeFence,
   SYSTEM_PROMPT,
 };
 
