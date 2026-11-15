@@ -1,129 +1,124 @@
-# Moodify — Project Status & Team Roadmap (USER_TASKS.md)
+# Moodify: Project Status and Team Roadmap
 
-**Project:** Moodify (AI-Powered Multilingual Mood-to-Music Recommendation App)  
-**Tech Stack:** React Native (Expo Router) + Node.js / Express + Supabase PostgreSQL + Google Gemini LLM  
-**Repository Status:** Up-to-date on `main` branch · Secrets sanitised · Live build verified  
-**Last Updated:** November 2026  
+**Project:** Moodify, a multilingual (English, Hindi, Hinglish) mood-to-music recommendation app
+**Stack:** React Native (Expo Router) · Node.js 22 / Express · Supabase (Postgres, Auth, RLS) · Google Gemini
+**Last updated:** 16 November 2026 (after PR #10)
 
----
-
-## 1. What Has Been Done (Shipped & Pushed)
-
-### A. Backend & AI Layer (Aditya Jha)
-- [x] **Gemini 2.5 Flash Emotion Extraction Service** (`backend/src/services/emotionService.js`):
-  - Multilingual emotion extraction from free-text inputs in English, Hindi, and Hinglish.
-  - Strict 3000ms timeout (`Promise.race`) with automatic fallback to a local keyword/regex scoring engine.
-  - Safe extraction of `emotion`, `energy` (low/medium/high), `intensity`, `context`, and target mood mapping.
-- [x] **Supabase JWT Authentication Middleware** (`backend/src/middlewares/auth.js`):
-  - Validates `Bearer <token>` against `supabase.auth.getUser()`.
-  - Attaches `req.user` (`id`, `email`) to protected routes; gracefully denies unauthenticated requests with `401 Unauthorized`.
-- [x] **Standardized Error Handling** (`backend/src/middlewares/errorHandler.js`):
-  - Strict JSON error envelopes `{ error: { code, message, details } }`.
-  - Sanitized 500 `INTERNAL_ERROR` preventing leak of backend stack traces.
-- [x] **Controllers & Routes**:
-  - `POST /api/mood/analyze` — Analyzes user's raw text and returns emotion tags.
-  - `POST /api/mood/confirm` — Commits confirmed mood into user history.
-  - `GET /api/mood/history` — Paginated history with weekly mood aggregation counts.
-  - `DELETE /api/mood/:id` — Soft/hard delete for single entry or clear-all.
-  - `GET /api/preferences` & `PUT /api/preferences` — User profile, preferred languages, and favorite genres.
-- [x] **Test Harness**:
-  - 42 tests (`backend/tests/emotionService.test.js`) verifying edge-case handling, JSON extraction, multilingual phrases, timeout triggers, and fallback accuracy.
-
-### B. Frontend & UI/UX (Hirannya)
-- [x] **Luxury Dark Theme Foundation** (`mobile/src/constants/theme.ts`):
-  - Midnight palette (`#090712`, `#130F24`, `#1A1530`, `#22C55E`, `#FF4B72`, `#8B5CF6`).
-- [x] **Login Screen Redesign** (`mobile/app/(auth)/login.tsx`):
-  - **Mobile (< 768px)**: Centered layout matching reference image with glowing gradient orb, "Login to Your Account", rounded pill inputs (with ✉️ mail, 🔒 password, 👁️ toggle), custom "Remember Me" checkbox, and vibrant pill CTA.
-  - **Desktop (≥ 768px)**: Split-screen luxury card with clean form on the left and an atmospheric dark audio visualization panel on the right.
-  - **Zero OAuth**: Removed all 3rd-party OAuth providers (Google, Apple, Facebook) as requested.
-  - **No Hardcoded Moods**: Removed static mood tag chips (`Relaxed`, `Happy`, etc.) from visual panels.
-- [x] **Sign Up Screen Redesign** (`mobile/app/(auth)/signup.tsx`):
-  - Consistent split-screen desktop & pill-shaped mobile layout with password confirmation, terms checkbox, and direct login flow.
-- [x] **Onboarding Screen ("Tune Your Taste")** (`mobile/app/(auth)/onboarding.tsx`):
-  - Matches user reference design for both Desktop and Mobile.
-  - Stepper navigation: `✓ Account` ──── `② Your Taste`.
-  - Desktop Left Panel: Glowing illuminated 3D headphones, equalizer visualizer, bold headline **Make It <span style="color:#22C55E">Yours</span>**, and 3 feature callouts (Personalized Picks, Learns Your Vibe, Your Music Your Way).
-  - Glassmorphic Main Card: Nickname input (`👤`), custom language chips (`अ आ Hindi ✓`, `🌐 English ✓`), and multi-select genre grid with reference icons (`🎬 Bollywood`, `🎶 Indie Pop`, `🎧 Lo-Fi`, `🎸 Rock`, etc.).
-  - Neon green CTA pill: `Get Started 🚀 →`.
-- [x] **Navigation Gate & Access Control** (`mobile/app/_layout.tsx` & `AuthContext.tsx`):
-  - **Strict Login-Only Landing**: App boots to `/(auth)/login`.
-  - **Session Lock**: Any unauthenticated access to `/(auth)/onboarding` or `/(tabs)` is automatically blocked and redirected to `/(auth)/login`.
-  - Smooth progression: `Login` → `Onboarding` (first time) → `Main Dashboard Tabs`.
-- [x] **Tab Navigation Shell**:
-  - `(tabs)/index.tsx` (Home / Mood Input)
-  - `(tabs)/music.tsx` (Recommendations & Player)
-  - `(tabs)/history.tsx` (Mood Trends & Weekly History)
-  - `(tabs)/profile.tsx` (User Settings & Sign Out)
-
-### C. Security & Secrets Protection
-- [x] Secrets scrubbed from git history; `.gitignore` enforced for `.env`, `*.pem`, `serviceAccountKey.json`.
-- [x] Clear templates provided in `.env.example`, `backend/.env.example`, and `mobile/.env.example`.
+This file tracks who owns what and what is left. The decisions everyone builds against are in the Team Guide (PDF in the repo root) and the API contract in [docs/api.md](docs/api.md). If this file and those disagree, the guide and the contract win.
 
 ---
 
-## 2. What Needs To Be Done (Priority Roadmap — Member-Wise)
+## 1. Done (merged into `main`)
 
-### 🧑‍💻 Aditya Jha (Backend, Data & AI Lead)
-| Priority | Task Description | Target File / Area | Details |
-| :--- | :--- | :--- | :--- |
-| **P0** | **Spotify / Music API Integration** | `backend/src/services/musicService.js` | Fetch real tracks, 30s audio preview URLs, album art, and artist info via Spotify Web API or YouTube Music API. |
-| **P0** | **Rate Limiting & Abuse Prevention** | `backend/src/middlewares/rateLimiter.js` | Add `express-rate-limit` (e.g. 10 mood requests/minute per IP/User) to prevent Gemini API quota exhaustion. |
-| **P1** | **Supabase Database Schema & RLS** | `backend/supabase/migrations/` | Write and test SQL migration scripts for `profiles`, `mood_entries`, and `song_feedback` tables with Row Level Security (RLS) policies. |
-| **P1** | **Recommendation Scoring Algorithm** | `backend/src/services/recommendationService.js` | Incorporate user preferences (languages, genres) and feedback history (likes/dislikes) into ranking weights. |
-| **P2** | **Automated LLM Eval Pipeline** | `backend/tests/evals/` | Run real benchmark assertions against Gemini 2.5 Flash (`RUN_LLM_EVAL=1`) to measure classification accuracy on Hinglish idioms. |
+### Backend and LLM: Aditya Jha
+- [x] Supabase clients and JWT auth middleware (`middlewares/auth.js`): `Bearer` token checked with `supabase.auth.getUser()`, `req.user = { id, email }`, 401 `UNAUTHORIZED` otherwise.
+- [x] Gemini emotion service (`services/emotionService.js`): JSON mode, few-shot prompt, 3 s timeout with `AbortController`, output validated against the contract, keyword fallback on any failure. Never rejects.
+- [x] Mood endpoints: `POST /api/mood/analyze`, `POST /api/mood/confirm`, `GET /api/mood/history` (with weekly counts), `DELETE /api/mood/:id` (one entry or `all`).
+- [x] Preferences endpoints: `GET /api/preferences` (404 `PROFILE_NOT_FOUND` before onboarding), `PUT /api/preferences`.
+- [x] Supabase schema with row-level security and indexes (`supabase/migrations/`).
+- [x] Environment templates (`.env.example`, `backend/.env.example`, `mobile/.env.example`); secrets kept out of git.
 
----
+### Recommendations and data: Niraj Chandekar
+- [x] Scoring engine (`utils/scoring.js`): `0.5 · MoodMatch + 0.3 · LanguageMatch + 0.2 · FeedbackBoost`, with a reason of 60 characters or fewer for every song.
+- [x] Recommendation service (`services/recommendationService.js`): profile languages and genres, like-based boosts, dislikes removed, offline fallback pool when the database is unavailable.
+- [x] `GET /api/recommendations`, `POST /api/feedback` (one row per user and song), `GET /api/feedback/liked`.
+- [x] 120-song catalog with official YouTube links; seed loader (`npm run seed`) and offline demo (`scripts/demoRecommendations.js`).
 
-### 🎨 Hirannya (Frontend, Mobile & UI/UX Lead)
-| Priority | Task Description | Target File / Area | Details |
-| :--- | :--- | :--- | :--- |
-| **P0** | **Live Audio Player Component** | `mobile/src/components/AudioPlayer.tsx` | Implement background audio playback using `expo-av` for song previews with play/pause, scrub bar, and volume controls. |
-| **P0** | **Home Tab Mood Submission Flow** | `mobile/app/(tabs)/index.tsx` | Connect text box + voice input button to `/api/mood/analyze`, display interactive mood confirmation modal before generating songs. |
-| **P1** | **Song Recommendation Card Interactions** | `mobile/app/(tabs)/music.tsx` | Add Heart (Like), Thumbs Down (Dislike), and Skip actions with smooth animations and backend feedback sync. |
-| **P1** | **Mood History Visualizations** | `mobile/app/(tabs)/history.tsx` | Build weekly mood distribution chart (bar/donut chart) and calendar heat-map of user emotions over time. |
-| **P2** | **Haptic Feedback & Micro-Interactions** | `mobile/src/utils/haptics.ts` | Add subtle haptic vibrations (via `expo-haptics`) when selecting chips, liking songs, and submitting moods. |
+### Mobile, mood to music: Sanjani Kumari
+- [x] Typed API client (`services/api.ts`) with the mock backend switch (`EXPO_PUBLIC_USE_MOCKS`).
+- [x] Mood AI screen: type a feeling, see the detected mood, confirm or change it.
+- [x] Recommendations screen with `SongCard`, `MoodChip` and like / dislike / skip `FeedbackButtons`; songs open on YouTube.
+- [x] Hooks `useMood` and `useRecommendations`.
 
----
+### Mobile, auth and dashboards: Hirannya Mhaisbadwe
+- [x] Dark theme (`constants/theme.ts`).
+- [x] Login and sign-up (responsive mobile and desktop layouts, no OAuth).
+- [x] Onboarding ("Tune Your Taste": name, languages, genres) and the session gate (login → onboarding the first time → tabs).
+- [x] Home, My Music (liked songs), My Mood (weekly counts, history, delete) and Profile screens.
 
-### 🛡️ Rani / Fullstack QA & DevOps
-| Priority | Task Description | Target File / Area | Details |
-| :--- | :--- | :--- | :--- |
-| **P0** | **Backend Deployment** | `backend/Dockerfile` / Render / Fly.io | Deploy Node.js Express backend to cloud with environment secrets and healthcheck endpoint (`/health`). |
-| **P0** | **EAS Build Configuration (Android APK)** | `mobile/eas.json` | Set up Expo Application Services (EAS) build profile to compile standalone Android `.apk` / `.aab` for real device testing. |
-| **P1** | **GitHub Actions CI/CD Pipeline** | `.github/workflows/ci.yml` | Automate backend unit tests, linter checks, and Expo web export on every pull request to `main`. |
-| **P2** | **CORS & Domain Security Audit** | `backend/src/server.js` | Restrict allowed origins to production domains and Expo localhost development ports. |
+### NLP evaluation, contract and QA: Aditya Kumar Yadav
+- [x] API contract (`docs/api.md`) and shared TypeScript types (`mobile/src/types`), plus request validation (`middlewares/validate.js`) and the snake_case ↔ camelCase mappers (`utils/mappers.js`).
+- [x] Rule-based multilingual classifier (`services/keywordFallback.js`): 775-term lexicon in English, Hindi and Hinglish; clause-aware negation; emoji cues; under 1 ms per call.
+- [x] 144-sentence trilingual benchmark and evaluation harness (`npm run eval`, `npm run eval:llm`): keyword baseline 71.5% top-1, 95.1% when a cue is found ([docs/evaluation.md](docs/evaluation.md)).
+- [x] Mock backend for the app (`services/mocks.ts`), end-to-end test plan ([docs/test-plan.md](docs/test-plan.md)), README.
+- [x] Backend hardening: JSON errors on every path, database errors mapped to contract codes, Gemini parsing fixes.
+- [x] GitHub Actions CI: backend tests, keyword evaluation and mobile type check on every pull request.
 
----
-
-## 3. Targeted Improvements (UI, Services, Reliability)
-
-### A. UI / UX Improvements
-1. **Interactive Audio Visualizer**:
-   - Add a glowing wave visualizer in the Player Bar that reacts dynamically during track playback.
-2. **Skeleton & Shimmer Loading States**:
-   - Replace generic spinners with dark shimmering skeletons while Gemini processes mood and while song lists load.
-3. **Voice Input for Mood Expression**:
-   - Enable mic button on the Home tab allowing users to speak their thoughts in Hindi/English (using Web Speech API / Expo Speech).
-
-### B. Service & AI Layer Improvements
-1. **Context-Aware Mood Synthesis**:
-   - Enhance the prompt to detect time-of-day (e.g. late night, early morning) and weather context to fine-tune recommendation tempo.
-2. **Smart Caching Layer**:
-   - Cache frequent emotion classifications (e.g. "feeling low today", "gym workout energy") using an in-memory or Redis LRU cache to reduce LLM latency to <50ms.
-3. **Direct Open-in-App Deeplinks**:
-   - Include direct deeplinks (`spotify://track/...`, `https://open.spotify.com/...`) so users can seamlessly save curated songs directly to their personal Spotify library.
-
-### C. Architecture & Database Improvements
-1. **PostgreSQL Indexes**:
-   - Index `mood_entries(user_id, created_at DESC)` for sub-millisecond retrieval of user history.
-2. **Offline-First Storage**:
-   - Cache recent recommendations and profile settings locally using `AsyncStorage` / `MMKV` so the app opens instantly without network delay.
+**Quality today:** 76 backend tests (75 pass; the Gemini benchmark is skipped without a key), strict TypeScript passes, CI is green.
 
 ---
 
-## 4. Immediate Next Steps
+## 2. Remaining work, by owner
 
-1. **Aditya**: Implement `backend/src/services/musicService.js` with Spotify API credentials.
-2. **Hirannya**: Wire the `AudioPlayer` into `mobile/app/(tabs)/music.tsx`.
-3. **DevOps**: Configure `.github/workflows/ci.yml` to run test suites on commit.
+The order matters: rows marked *needs* wait on the step they name.
 
+### Aditya Jha
+| # | Task | Details |
+| :--- | :--- | :--- |
+| 1 | Share the Gemini key for local evaluation | Put it in `backend/.env` as `LLM_API_KEY` (`LLM_MODEL=gemini-2.5-flash`). Never commit it. |
+| 2 | Set up the real Supabase project | Run the migration, then `npm run seed` to load the 120 songs. |
+| 3 | Tune the prompt after the first LLM run | *Needs #1 of Aditya Kumar Yadav.* Fix the misclassified cases by improving rules and examples; never copy benchmark sentences into the prompt. |
+| 4 | Record the demo video | *Needs the deployed backend and the Android build.* |
+
+### Niraj Chandekar
+| # | Task | Details |
+| :--- | :--- | :--- |
+| 1 | Deploy the backend (e.g. Render) | *Needs Supabase set up.* Node 22 (`engines` in `package.json`), all `backend/.env` values as host secrets, health check on `/health`. |
+| 2 | Compile the project report | Collect each member's chapter into one document. |
+
+### Sanjani Kumari
+| # | Task | Details |
+| :--- | :--- | :--- |
+| 1 | Point the app at the deployed backend | `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_USE_MOCKS=false`; run the mood → songs flow once against real data. |
+| 2 | Fix bugs found in the test session | Mood AI and Recommendations screens. |
+| 3 | Report section and slides | Mood-to-music flow and API client. |
+
+### Hirannya Mhaisbadwe
+| # | Task | Details |
+| :--- | :--- | :--- |
+| 1 | Android build | Add `mobile/eas.json` and build an APK with EAS (or share via Expo Go) against the deployed backend. |
+| 2 | Fix bugs found in the test session | Auth, onboarding and dashboard screens. |
+| 3 | Report section and slides | App design and screens. |
+
+### Aditya Kumar Yadav
+| # | Task | Details |
+| :--- | :--- | :--- |
+| 1 | LLM evaluation and error analysis | *Needs the Gemini key.* Run `npm run eval:llm`, send the misclassified sentences for prompt tuning, re-run, and report both runs against the 80% target in `docs/evaluation.md` and the README. |
+| 2 | End-to-end test session on real phones | *Needs the deployed backend and the build.* Run [docs/test-plan.md](docs/test-plan.md) with swapped testers; file bugs to owners. |
+| 3 | Report chapter: NLP methodology and evaluation | Pipeline, classifier design, benchmark, results, error analysis. |
+| 4 | Slide deck | Collect everyone's slides into one deck. |
+| 5 | Release | Merge the last pull requests, tick the README status, tag `v1.0`. |
+
+---
+
+## 3. Out of scope for v1 (decided)
+
+These came up but are not part of this release. They stay listed so they are not re-opened mid-sprint.
+
+| Idea | Why not now |
+| :--- | :--- |
+| Spotify or other music API, 30 s previews, album art | Songs open as YouTube links (Team Guide). No API keys, quotas or licensing to manage. |
+| In-app audio player (`expo-av`), visualizer | Same reason: playback happens in the YouTube app. |
+| Voice input for moods | Needs speech-to-text in Hindi and Hinglish; out of the 2-day scope. |
+| Time-of-day or weather context in the prompt | Not measurable on the benchmark; risks the 80% target. |
+
+## 4. Improvements if time allows
+
+| Area | Improvement | Owner if picked up |
+| :--- | :--- | :--- |
+| Backend | Rate limit `POST /api/mood/analyze` (e.g. `express-rate-limit`, 10 per minute per user) to protect the Gemini quota | Aditya Jha |
+| Backend | Restrict CORS to the deployed app origins | Niraj Chandekar |
+| Backend | Cache repeated mood texts for a few minutes to cut LLM calls | Aditya Jha |
+| Database | Composite index `mood_entries(user_id, created_at DESC)` for history queries | Aditya Jha |
+| Mobile | Skeleton loading states on Mood AI and Recommendations | Sanjani Kumari |
+| Mobile | Haptics on mood chips and feedback buttons (`expo-haptics`) | Hirannya Mhaisbadwe |
+| Mobile | Cache the last recommendations with `AsyncStorage` so the app opens offline | Sanjani Kumari |
+
+## 5. Next steps, in order
+
+1. **Aditya Jha:** Gemini key to Aditya Kumar Yadav; Supabase project set up and seeded.
+2. **Aditya Kumar Yadav:** first LLM evaluation run → misclassified list to Aditya Jha.
+3. **Niraj:** deploy the backend. **Hirannya:** Android build. **Sanjani:** app on the real backend.
+4. **Everyone:** test session from the test plan; owners fix their bugs.
+5. **Aditya Jha:** prompt tuning → **Aditya Kumar Yadav:** second LLM run and final numbers.
+6. **Aditya Jha:** demo video. **Niraj:** report. **Aditya Kumar Yadav:** slides, README, `v1.0` tag.
