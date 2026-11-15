@@ -11,6 +11,9 @@
     "eval": "node scripts/evaluate.js",
     "eval:llm": "node scripts/evaluate.js --engine llm --errors"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "keywords": ["music", "recommendation", "ai", "mood", "express", "supabase"],
   "author": "",
   "license": "MIT",
