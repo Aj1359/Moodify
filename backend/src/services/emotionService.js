@@ -24,7 +24,9 @@ Rules:
 5. "emotion" must be a concise snake_case or single word string (e.g. "exhaustion", "joy", "longing", "anxiety", "frustration").
 6. "context" must be a concise snake_case or single word category (e.g. "work", "studies", "relationship", "fitness", "celebration", "general").
 7. Exhaustion/tiredness/fatigue maps to primary mood "Relaxed" with low energy.
-8. Output MUST be strictly valid JSON matching the schema, with NO markdown formatting, NO backticks, and NO conversational text.
+8. Joy or warmth about a specific person (a crush, partner or someone they love) or about a date is primarily "Romantic"; "Happy" may follow as a secondary mood.
+9. Losing interest in everything, emptiness or "nothing feels right" is "Sad" with low energy, not "Relaxed". "Relaxed" is a pleasant calm the user wants.
+10. Output MUST be strictly valid JSON matching the schema, with NO markdown formatting, NO backticks, and NO conversational text.
 
 Examples:
 ${formatFewShot()}
@@ -67,13 +69,14 @@ function validateAndCleanLlmOutput(parsed) {
     return null;
   }
 
-  // Map every mood to its contract spelling; any unknown mood rejects the whole answer
+  // Map each mood to its contract spelling and drop any the app does not support
+  // (e.g. ["Happy", "Excited"] keeps "Happy"). Only an answer with no supported mood is rejected.
   const canonicalMoods = [];
   for (const m of targetMoods) {
     const match = typeof m === 'string' && MOODS.find((mood) => mood.toLowerCase() === m.trim().toLowerCase());
-    if (!match) return null;
-    canonicalMoods.push(match);
+    if (match) canonicalMoods.push(match);
   }
+  if (canonicalMoods.length === 0) return null;
 
   // Deduplicate moods while preserving order
   const uniqueMoods = [...new Set(canonicalMoods)];
@@ -102,80 +105,102 @@ async function analyzeMood(text) {
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), LIMITS.LLM_TIMEOUT_MS);
+  let timeoutId;
+  // A hard deadline for the whole call, including reading the body. Clearing the
+  // timer when headers arrive would let a slow body stream run far past 3 s.
+  const deadline = new Promise((resolve) => {
+    timeoutId = setTimeout(() => {
+      controller.abort();
+      resolve(TIMED_OUT);
+    }, LIMITS.LLM_TIMEOUT_MS);
+  });
 
   try {
-    // The key goes in a header, not the URL, so it never appears in logs or error messages
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-
-    const requestBody = {
-      systemInstruction: {
-        parts: [{ text: SYSTEM_PROMPT }],
-      },
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: `Analyze the mood of this text and return structured JSON:\nInput: ${JSON.stringify(text)}` }],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.1,
-        responseMimeType: 'application/json',
-        // Gemini 2.5 Flash "thinks" by default, which pushes replies past the 3 s budget.
-        // A short classification does not need it, so turn it off where the model allows.
-        ...(supportsThinkingOff(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
-      },
-    };
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
-      },
-      body: JSON.stringify(requestBody),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      console.warn(`Gemini API error: ${response.status} ${response.statusText}`);
-      return keywordFallback(text);
-    }
-
-    const data = await response.json();
-    const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!candidateText) {
-      console.warn('Gemini returned an empty candidate text');
-      return keywordFallback(text);
-    }
-
-    let parsed;
-    try {
-      parsed = JSON.parse(stripCodeFence(candidateText));
-    } catch (parseErr) {
-      console.warn('Failed to parse Gemini output as JSON:', parseErr.message);
-      return keywordFallback(text);
-    }
-
-    const validated = validateAndCleanLlmOutput(parsed);
-    if (!validated) {
-      console.warn('Gemini JSON output failed contract validation, falling back to keywords:', JSON.stringify(parsed));
-      return keywordFallback(text);
-    }
-
-    return validated;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (err.name === 'AbortError') {
+    const result = await Promise.race([requestGemini(text, model, apiKey, controller.signal), deadline]);
+    if (result === TIMED_OUT) {
       console.warn(`Gemini call timed out after ${LIMITS.LLM_TIMEOUT_MS}ms, falling back to keywords`);
-    } else {
-      console.warn('Error calling Gemini API:', err.message);
+      return keywordFallback(text);
     }
+    return result || keywordFallback(text);
+  } catch (err) {
+    console.warn('Error calling Gemini API:', err.message);
     return keywordFallback(text);
+  } finally {
+    clearTimeout(timeoutId);
   }
+}
+
+const TIMED_OUT = Symbol('timed out');
+
+/**
+ * One Gemini request. Resolves to a validated MoodAnalysisResult, or null when the
+ * reply is unusable (HTTP error, empty, invalid JSON, off-contract). Rejects on network errors.
+ * @param {string} text
+ * @param {string} model
+ * @param {string} apiKey
+ * @param {AbortSignal} signal
+ */
+async function requestGemini(text, model, apiKey, signal) {
+  // The key goes in a header, not the URL, so it never appears in logs or error messages
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+
+  const requestBody = {
+    systemInstruction: {
+      parts: [{ text: SYSTEM_PROMPT }],
+    },
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: `Analyze the mood of this text and return structured JSON:\nInput: ${JSON.stringify(text)}` }],
+      },
+    ],
+    generationConfig: {
+      temperature: 0.1,
+      responseMimeType: 'application/json',
+      // Gemini 2.5 Flash "thinks" by default, which pushes replies past the 3 s budget.
+      // A short classification does not need it, so turn it off where the model allows.
+      ...(supportsThinkingOff(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+    },
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
+    },
+    body: JSON.stringify(requestBody),
+    signal,
+  });
+
+  if (!response.ok) {
+    console.warn(`Gemini API error: ${response.status} ${response.statusText}`);
+    return null;
+  }
+
+  const data = await response.json();
+  const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!candidateText) {
+    console.warn('Gemini returned an empty candidate text');
+    return null;
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(stripCodeFence(candidateText));
+  } catch (parseErr) {
+    console.warn('Failed to parse Gemini output as JSON:', parseErr.message);
+    return null;
+  }
+
+  const validated = validateAndCleanLlmOutput(parsed);
+  if (!validated) {
+    console.warn('Gemini JSON output failed contract validation, falling back to keywords:', JSON.stringify(parsed));
+    return null;
+  }
+
+  return validated;
 }
 
 module.exports = {

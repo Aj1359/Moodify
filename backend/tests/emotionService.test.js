@@ -147,3 +147,32 @@ test('emotionService: the default model is gemini-3.5-flash-lite, sent without a
   assert.ok(url.includes('/models/gemini-3.5-flash-lite:generateContent'));
   assert.equal(JSON.parse(init.body).generationConfig.thinkingConfig, undefined);
 });
+
+test('emotionService: the 3 s deadline covers reading the body, not just the headers', async (t) => {
+  withKey(t);
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let aborted = false;
+  t.mock.method(globalThis, 'fetch', async (url, init) => {
+    init.signal.addEventListener('abort', () => {
+      aborted = true;
+    });
+    // Headers arrive at once, but the body never finishes streaming
+    return { ok: true, status: 200, statusText: 'OK', json: () => new Promise(() => {}) };
+  });
+
+  const pending = analyzeMood('bahut gussa aa raha hai');
+  await new Promise((resolve) => setImmediate(resolve)); // let fetch resolve
+  t.mock.timers.tick(3000);
+  const result = await pending;
+
+  assert.equal(result.source, 'keyword');
+  assert.equal(result.targetMoods[0], 'Angry');
+  assert.ok(aborted, 'the request is aborted at the deadline');
+});
+
+test('emotionService: unsupported extra moods are dropped, not fatal', () => {
+  const { validateAndCleanLlmOutput } = require('../src/services/emotionService');
+  const base = { emotion: 'joy', energy: 'high', intensity: 'high', context: 'celebration' };
+  assert.deepEqual(validateAndCleanLlmOutput({ ...base, targetMoods: ['Happy', 'Excited'] }).targetMoods, ['Happy']);
+  assert.equal(validateAndCleanLlmOutput({ ...base, targetMoods: ['Excited', 'Confused'] }), null);
+});
