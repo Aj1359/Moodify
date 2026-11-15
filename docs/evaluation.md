@@ -7,9 +7,9 @@ Status: keyword fallback evaluated on 2026-11-12; full LLM pipeline evaluated on
 | Engine | Top-1 accuracy | Top-3 hit rate | Macro-F1 | Latency (p95) | Target |
 | --- | --- | --- | --- | --- | --- |
 | Keyword fallback (rule-based) | 71.5% | 72.9% | 0.754 | < 3 ms | < 50 ms, never fails |
-| **LLM pipeline (Gemini + fallback)** | **97.2%** | **100%** | **0.972** | 1.5 s | **≥ 80%** accuracy, < 3 s |
+| **LLM pipeline (Gemini + fallback)** | **97.9%** | **99.3%** | **0.979** | 1.5 s | **≥ 80%** accuracy, < 3 s |
 
-The LLM fixes 39 of the keyword fallback's 41 errors, including every sentence that has no mood word. All four of its own mistakes still list the gold mood second. When the keyword fallback finds at least one mood cue, it is right **95.1%** of the time (98 of 103 sentences), so it remains a reliable safety net when Gemini is slow or down.
+The LLM fixes 39 of the keyword fallback's 41 errors, including 36 of the 37 sentences where the fallback found no usable cue. Across three runs with the final prompt, Gemini's own answers were right 329 times out of 333 (98.8%). When the keyword fallback finds at least one mood cue, it is right **95.1%** of the time (98 of 103 sentences), so it remains a reliable safety net when Gemini is slow or down.
 
 ## Benchmark
 
@@ -114,55 +114,95 @@ Accuracy went from 69.4% to 71.5%. Each fix has a regression test in `keywordFal
 
 ## LLM pipeline results
 
-Run on 2026-11-16: `gemini-3.5-flash-lite`, JSON mode, temperature 0.1, the few-shot prompt from `promptExamples.js`, 3 s timeout with keyword fallback. 143 of 144 answers came from the LLM; one Gemini 503 fell back to keywords, which got it right. The generated report is [llm-eval.md](llm-eval.md).
+`gemini-3.5-flash-lite`, JSON mode, temperature 0.1, the few-shot prompt from `promptExamples.js`, 3 s timeout with keyword fallback. The generated report for the final prompt is [llm-eval.md](llm-eval.md).
+
+### Runs
+
+| Run | Prompt | Top-1 | LLM answers correct | Notes |
+| --- | --- | --- | --- | --- |
+| 1 | Original | 97.2% | 140 / 143 | One Gemini 503 fell back to keywords (correct). p50 1.14 s, p95 1.55 s, nothing over 3 s |
+| **2** | **Final (two rules added, below)** | **97.9%** | **136 / 138** | **Reported result.** 6 fallbacks after timeouts while the laptop was dropping into sleep |
+| 3 | Final | 96.5% | 128 / 130 | Laptop sleep caused 13 timeouts; the keyword fallback answered those |
+| 4 | Final | not used | 65 / 65 | Hit the free tier's daily limit (500 requests) after 65 calls |
+
+Runs 3 and 4 show how the pipeline behaves when Gemini is unavailable: accuracy degrades towards the keyword fallback's level, and the app never fails. Latency figures come from run 1, the only run without sleep or quota interruptions.
+
+### Final result (run 2)
 
 | Metric | Value |
 | --- | --- |
-| Top-1 accuracy | **97.2%** (140 / 144) |
-| Top-3 hit rate | 100% |
-| Macro-F1 | 0.972 |
-| Latency p50 / p95 / max | 1.14 s / 1.55 s / 1.81 s (no call reached the 3 s timeout) |
+| Top-1 accuracy | **97.9%** (141 / 144) |
+| Top-3 hit rate | 99.3% |
+| Macro-F1 | 0.979 |
+| Answer source | LLM 138, keyword fallback 6 (5 of them correct) |
+| Latency (run 1) | p50 1.14 s, p95 1.55 s, max 1.81 s |
+
+Run 2 was made before the timeout fix below. Four of its LLM answers arrived after 3 s; with the fix they would fall back to keywords, which gets two of them wrong. **96.5% is therefore the floor for the final code on this run**, still far above the target.
+
+| Mood | Precision | Recall | F1 |
+| --- | --- | --- | --- |
+| Happy | 94.7% | 100% | 0.973 |
+| Sad | 100% | 94.4% | 0.971 |
+| Angry | 100% | 100% | 1.000 |
+| Stressed | 100% | 100% | 1.000 |
+| Relaxed | 94.7% | 100% | 0.973 |
+| Motivated | 100% | 100% | 1.000 |
+| Romantic | 100% | 94.4% | 0.971 |
+| Nostalgic | 94.4% | 94.4% | 0.944 |
 
 ### Against the keyword fallback
 
 | Language | Keyword fallback | LLM pipeline | Change |
 | --- | --- | --- | --- |
 | English | 64.6% | 97.9% | +33.3 pts |
-| Hindi (Devanagari) | 75.0% | **100%** | +25.0 pts |
-| Hinglish (Romanised) | 75.0% | 93.8% | +18.8 pts |
-| **All** | 71.5% | **97.2%** | **+25.7 pts** |
+| Hindi (Devanagari) | 75.0% | 97.9% | +22.9 pts |
+| Hinglish (Romanised) | 75.0% | 97.9% | +22.9 pts |
+| **All** | 71.5% | **97.9%** | **+26.4 pts** |
 
-- **Fixed by the LLM:** 39 of the 41 keyword errors, including all 37 sentences where the fallback found no usable cue (for example "rent is due and my salary hasn't come yet", Stressed). These need world knowledge, which is what the LLM adds.
-- **Broken by the LLM:** 2 sentences the keyword fallback had right (en-37, hg-07, below).
-- **Wrong in both:** 2 (hg-11, hg-39).
+- **Fixed by the LLM:** 39 of the 41 keyword errors, including 36 of the 37 sentences with no usable cue (for example "rent is due and my salary hasn't come yet", Stressed). These need world knowledge, which is what the LLM adds.
+- **Broken by the LLM:** 1 sentence the keyword fallback had right (en-37).
+- **Wrong in both:** 2 (hg-11; hi-48, where Gemini timed out and the fallback answered).
 - Motivated recall goes from 50% to 100%: plans like "5am run before class" are understood without a feeling word.
-- English gains the most, because English speakers in the benchmark state situations rather than feelings.
+- English gains the most, because English sentences in the benchmark describe situations rather than name feelings.
 
 ### LLM error analysis
 
-| Id | Text | Gold | LLM answer | Why |
+| Id | Text | Gold | Answer | Why |
 | --- | --- | --- | --- | --- |
-| en-37 | she said yes!! first date this saturday | Romantic | Happy, Romantic | Joy dominates the surface; the romantic context is second |
-| hg-39 | usse baat karke dil khush ho jata hai | Romantic | Happy, Romantic | "dil khush" is literally "heart happy"; the keyword fallback made the same mistake |
-| hg-11 | ghar ki bahut yaad aa rahi hai hostel mein | Sad | Nostalgic, Sad | Homesickness is both; the label is debatable (also flagged in the keyword analysis) |
-| hg-07 | aaj mann bilkul nahi lag raha kisi cheez mein | Sad | Relaxed, Sad | Read as apathy (low energy) rather than sadness |
+| en-37 | she said yes!! first date this saturday | Romantic | Happy, Romantic (LLM) | Joy dominates the surface; the romantic context is second |
+| hg-11 | ghar ki bahut yaad aa rahi hai hostel mein | Sad | Nostalgic, Sad (LLM) | Homesickness is both; the label is debatable (also flagged in the keyword analysis) |
+| hi-48 | गाँव की गलियाँ और वो गर्मी की छुट्टियाँ | Nostalgic | Relaxed (keyword) | Gemini timed out; no keyword cue. The LLM got it right in every other run |
 
-Three of the four are Happy-vs-Romantic or Sad-vs-Nostalgic, pairs that overlap in meaning, and the gold mood is second every time. The app shows `targetMoods[0]` and lets the user change it, so these cost the user one tap. Hinglish is the weakest language (93.8%) because three of the four errors are Hinglish idioms.
+Both LLM errors are pairs of moods that overlap in meaning, and the gold mood is second each time. The app shows `targetMoods[0]` and lets the user change it, so these cost the user one tap.
 
-**Prompt tuning.** At 97.2% no tuning is needed for the target. One rule would address two errors: "a happy feeling about a specific person or date is Romantic". It must be phrased in general terms; benchmark sentences are never copied into the prompt.
+### Prompt tuning
+
+After run 1, two rules were added to the system prompt. Both are general definitions; no benchmark sentence was copied into the prompt.
+
+1. Joy or warmth about a specific person (a crush, partner or someone they love) or about a date is primarily Romantic; Happy may follow.
+2. Losing interest in everything, emptiness or "nothing feels right" is Sad with low energy, not Relaxed; Relaxed is a pleasant calm.
+
+They fixed both targeted errors (hg-39 "usse baat karke dil khush ho jata hai" → Romantic; hg-07 "aaj mann bilkul nahi lag raha kisi cheez mein" → Sad) and broke nothing. Hinglish went from 93.8% to 97.9%. en-37 still leads with Happy, because "she said yes!!" reads as celebration first.
+
+### Reliability fixes found during evaluation
+
+- **Timeout covered only the headers.** The 3 s timer was cleared as soon as Gemini's response headers arrived, so a slow body could hold a request for 5-20 s. `analyzeMood` now races the whole call against a hard 3 s deadline; a test with a body that never arrives proves it falls back on time.
+- **One unsupported mood discarded the whole answer.** Gemini sometimes adds a mood outside the eight (`["Happy", "Excited"]`). Unsupported moods are now dropped; only an answer with no supported mood falls back.
 
 ### Model choice
 
-| Model | Result | Notes |
-| --- | --- | --- |
-| `gemini-2.5-flash` | 19 / 19 correct, then rate-limited | The free tier allows **20 requests per day** per model, so the full run could not finish; a live demo would exhaust it within minutes. Thinking is on by default and pushed some replies past 3 s; `emotionService.js` now sends `thinkingBudget: 0` for this model. |
-| **`gemini-3.5-flash-lite`** | **140 / 144 correct** | No rate limiting across 144 calls; no thinking overhead; p95 1.5 s. **Now the default.** |
-| `gemini-3.8-flash` | Not usable | One test call took 172 s |
-| `gemini-1.5-flash`, `gemini-2.0-flash`, `gemini-2.5-flash-lite` | Unavailable | The API answers 404 (retired, or closed to new keys) |
+| Model | Free-tier limit | Result | Notes |
+| --- | --- | --- | --- |
+| `gemini-2.5-flash` | **20 requests / day** | 19 / 19 correct, then rate-limited | A live demo would exhaust it within minutes. Thinks by default, which pushed replies past 3 s; `emotionService.js` sends `thinkingBudget: 0` for it |
+| **`gemini-3.5-flash-lite`** | **500 requests / day** | **97.2-97.9%** | No thinking overhead, p95 1.5 s. **The default** |
+| `gemini-3.8-flash` | - | Not usable | One test call took 172 s |
+| `gemini-1.5-flash`, `gemini-2.0-flash`, `gemini-2.5-flash-lite` | - | Unavailable | The API answers 404 (retired, or closed to new keys) |
+
+500 requests a day covers a demo and a test session, but not repeated benchmark runs: each full run uses 144. The limit is per Google Cloud project and resets at midnight Pacific time.
 
 ### Limitations
 
-- One run at temperature 0.1. Expect a point or two of variation between runs.
+- Results vary a little between runs at temperature 0.1 (97.2% and 97.9% on the two clean runs).
 - The benchmark was written and labelled by the team, one gold label per sentence. Several sentences carry two moods (homesickness is Sad and Nostalgic), which top-1 accuracy counts as wrong.
 - 144 sentences: one sentence is 0.7 points of accuracy, so per-mood figures (18 sentences each) are coarse.
-- The free tier's quotas change over time; for the deployed app, check the limits on the AI Studio rate-limit page before a demo.
+- Free-tier quotas change over time; check the limits on the AI Studio rate-limit page before a demo.
