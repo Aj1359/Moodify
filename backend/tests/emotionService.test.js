@@ -25,3 +25,83 @@ test('emotionService: handles empty or generic text safely without crashing', as
   assert.equal(result.targetMoods[0], 'Relaxed');
 });
 
+
+// ---------------------------------------------------------------------------
+// LLM path with a mocked Gemini response (no network, no real key)
+// ---------------------------------------------------------------------------
+
+const geminiReply = (text, { ok = true, status = 200 } = {}) => async () => ({
+  ok,
+  status,
+  statusText: ok ? 'OK' : 'Error',
+  json: async () => ({ candidates: [{ content: { parts: [{ text }] } }] }),
+});
+
+const withKey = (t) => {
+  const saved = process.env.LLM_API_KEY;
+  process.env.LLM_API_KEY = 'test-key';
+  t.after(() => {
+    if (saved === undefined) delete process.env.LLM_API_KEY;
+    else process.env.LLM_API_KEY = saved;
+  });
+  t.mock.method(console, 'warn', () => {});
+};
+
+test('emotionService: a valid Gemini answer is returned with source "llm"', async (t) => {
+  withKey(t);
+  const fetchMock = t.mock.method(
+    globalThis,
+    'fetch',
+    geminiReply('{"emotion":"exhaustion","energy":"low","intensity":"medium","context":"work","targetMoods":["Relaxed","Sad"]}')
+  );
+
+  const result = await analyzeMood('office ne nichod diya aaj');
+  assert.deepEqual(result, {
+    emotion: 'exhaustion',
+    energy: 'low',
+    intensity: 'medium',
+    context: 'work',
+    targetMoods: ['Relaxed', 'Sad'],
+    source: 'llm',
+  });
+
+  const [url, init] = fetchMock.mock.calls[0].arguments;
+  assert.ok(!url.includes('test-key'), 'the API key must not be in the URL');
+  assert.equal(init.headers['x-goog-api-key'], 'test-key');
+});
+
+test('emotionService: fenced JSON and lower-case moods are still accepted', async (t) => {
+  withKey(t);
+  t.mock.method(
+    globalThis,
+    'fetch',
+    geminiReply('```json\n{"emotion":"joy","energy":"High","intensity":"high","context":"celebration","targetMoods":["happy"]}\n```')
+  );
+  const result = await analyzeMood('placement ho gaya!!');
+  assert.equal(result.source, 'llm');
+  assert.deepEqual(result.targetMoods, ['Happy']);
+  assert.equal(result.energy, 'high');
+});
+
+test('emotionService: falls back to keywords on an HTTP error, bad JSON, an unknown mood or a network failure', async (t) => {
+  withKey(t);
+  const text = 'bahut gussa aa raha hai';
+  const cases = [
+    geminiReply('{}', { ok: false, status: 429 }),
+    geminiReply('not json at all'),
+    geminiReply('{"emotion":"x","energy":"low","intensity":"low","context":"y","targetMoods":["Confused"]}'),
+    async () => {
+      const err = new Error('aborted');
+      err.name = 'AbortError';
+      throw err;
+    },
+  ];
+  for (const impl of cases) {
+    t.mock.method(globalThis, 'fetch', impl);
+    const result = await analyzeMood(text);
+    assert.equal(result.source, 'keyword');
+    assert.equal(result.targetMoods[0], 'Angry');
+    t.mock.restoreAll();
+    t.mock.method(console, 'warn', () => {});
+  }
+});
