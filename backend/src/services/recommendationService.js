@@ -80,6 +80,20 @@ function getFallbackRecommendations({ mood, languages = ['Hindi', 'English'], li
  */
 async function getRecommendations({ userId, mood, language, limit = 10 }) {
   try {
+    const hasSupabaseConfig = Boolean(
+      process.env.SUPABASE_URL &&
+      process.env.SUPABASE_URL !== 'https://placeholder.supabase.co' &&
+      (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY)
+    );
+
+    if (!hasSupabaseConfig) {
+      return getFallbackRecommendations({
+        mood,
+        languages: language === 'Hindi' ? ['Hindi'] : language === 'English' ? ['English'] : ['Hindi', 'English'],
+        limit,
+      });
+    }
+
     // 1. Fetch user profile to get preferred languages and genres
     let profileLanguages = ['Hindi', 'English'];
     let profileGenres = [];

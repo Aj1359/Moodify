@@ -11,3 +11,4 @@ router.use(requireAuth);
 router.get('/', validate('recommendations'), recommendationController.getRecommendations);
 
 module.exports = router;
+

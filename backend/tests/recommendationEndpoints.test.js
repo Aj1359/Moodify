@@ -40,3 +40,4 @@ test('feedbackController: functions are defined and exported correctly', () => {
   assert.equal(typeof feedbackController.postFeedback, 'function');
   assert.equal(typeof feedbackController.getLikedSongs, 'function');
 });
+

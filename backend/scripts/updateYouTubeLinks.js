@@ -140,3 +140,4 @@ for (const song of songs) {
 
 fs.writeFileSync(SEED_FILE, JSON.stringify(songs, null, 2) + '\n', 'utf8');
 console.log(`Successfully replaced ${replacedCount} songs with YouTube URLs in songs.seed.json`);
+
