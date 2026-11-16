@@ -45,39 +45,39 @@ This file tracks who owns what and what is left. The decisions everyone builds a
 - [x] Backend hardening: JSON errors on every path, database errors mapped to contract codes, Gemini parsing fixes.
 - [x] GitHub Actions CI: backend tests, keyword evaluation and mobile type check on every pull request.
 
-**Quality today:** 80 backend tests (79 pass; the live Gemini benchmark is skipped without a key), strict TypeScript passes, CI is green, LLM pipeline at 97.9% on the benchmark.
+**Quality today:** 87 backend tests (86 pass; the live Gemini benchmark is skipped without a key), strict TypeScript passes, CI is green, LLM pipeline at 97.9% on the benchmark.
 
 ---
 
 ## 2. Remaining work, by owner
 
-The order matters: rows marked *needs* wait on the step they name.
+The order matters: rows marked *needs* wait on the step they name. Every setup step, with checks, is in **[docs/deployment.md](docs/deployment.md)**; all the configuration it needs is already in the repo.
 
 ### Aditya Jha
 | # | Task | Details |
 | :--- | :--- | :--- |
 | 1 | ~~Share the Gemini key for local evaluation~~ | Done. Keep `LLM_MODEL=gemini-3.5-flash-lite`: the `gemini-2.5-flash` free tier allows only 20 requests a day. |
-| 2 | Set up the real Supabase project | Run the migration, then `npm run seed` to load the 120 songs. |
+| 2 | Set up the real Supabase project | [Deployment guide](docs/deployment.md) steps 1-2: run both migrations, turn off email confirmation, `npm run seed`. |
 | 3 | ~~Prompt tuning~~ | Done: two general rules (Romantic for joy about a person or date; apathy is Sad, not Relaxed) took the pipeline from 97.2% to 97.9%. Review them in `emotionService.js`. |
 | 4 | Record the demo video | *Needs the deployed backend and the Android build.* |
 
 ### Niraj Chandekar
 | # | Task | Details |
 | :--- | :--- | :--- |
-| 1 | Deploy the backend (e.g. Render) | *Needs Supabase set up.* Node 22 (`engines` in `package.json`), all `backend/.env` values as host secrets, health check on `/health`. |
+| 1 | Deploy the backend on Render | *Needs Supabase set up.* [Deployment guide](docs/deployment.md) step 3: New → Blueprint picks up `render.yaml`; fill the four secrets. |
 | 2 | Compile the project report | Collect each member's chapter into one document. |
 
 ### Sanjani Kumari
 | # | Task | Details |
 | :--- | :--- | :--- |
-| 1 | Point the app at the deployed backend | `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_USE_MOCKS=false`; run the mood → songs flow once against real data. |
+| 1 | Point the app at the deployed backend | [Deployment guide](docs/deployment.md) step 4: `mobile/.env`, then run the mood → songs flow once against real data. |
 | 2 | Fix bugs found in the test session | Mood AI and Recommendations screens. |
 | 3 | Report section and slides | Mood-to-music flow and API client. |
 
 ### Hirannya Mhaisbadwe
 | # | Task | Details |
 | :--- | :--- | :--- |
-| 1 | Android build | Add `mobile/eas.json` and build an APK with EAS (or share via Expo Go) against the deployed backend. |
+| 1 | Android build | *Needs the deployed backend.* [Deployment guide](docs/deployment.md) step 5: `eas.json`, app icon and splash are ready; `eas login`, `eas init`, add the three public values, `eas build -p android --profile preview`. |
 | 2 | Fix bugs found in the test session | Auth, onboarding and dashboard screens. |
 | 3 | Report section and slides | App design and screens. |
 
@@ -88,7 +88,8 @@ The order matters: rows marked *needs* wait on the step they name.
 | 2 | End-to-end test session on real phones | *Needs the deployed backend and the build.* Run [docs/test-plan.md](docs/test-plan.md) with swapped testers; file bugs to owners. |
 | 3 | Report chapter: NLP methodology and evaluation | Pipeline, classifier design, benchmark, results, error analysis. |
 | 4 | Slide deck | Collect everyone's slides into one deck. |
-| 5 | Release | Merge the last pull requests, tick the README status, tag `v1.0`. |
+| 5 | Release | Release notes are in [CHANGELOG.md](CHANGELOG.md); after the test session, tick the README status and tag `v1.0`. |
+| 6 | Demo-day checklist | [Deployment guide](docs/deployment.md) step 6: wake the backend, check the Gemini quota, demo account, sentences to show. |
 
 ---
 
@@ -107,17 +108,17 @@ These came up but are not part of this release. They stay listed so they are not
 
 | Area | Improvement | Owner if picked up |
 | :--- | :--- | :--- |
-| Backend | Rate limit `POST /api/mood/analyze` (e.g. `express-rate-limit`, 10 per minute per user) to protect the Gemini quota | Aditya Jha |
-| Backend | Restrict CORS to the deployed app origins | Niraj Chandekar |
-| Backend | Cache repeated mood texts for a few minutes to cut LLM calls | Aditya Jha |
-| Database | Composite index `mood_entries(user_id, created_at DESC)` for history queries | Aditya Jha |
+| ~~Backend~~ | ~~Rate limit the LLM per user~~ | Done: `llmGuard.js`, 10 per user per minute and a daily cap, then keyword fallback |
+| ~~Backend~~ | ~~Restrict CORS~~ | Done: `CORS_ORIGINS` allow-list |
+| ~~Backend~~ | ~~Cache repeated mood texts~~ | Done: 10-minute answer cache in `llmGuard.js` |
+| ~~Database~~ | ~~Composite history index~~ | Done: `20261116000000_history_index.sql` |
 | Mobile | Skeleton loading states on Mood AI and Recommendations | Sanjani Kumari |
 | Mobile | Haptics on mood chips and feedback buttons (`expo-haptics`) | Hirannya Mhaisbadwe |
 | Mobile | Cache the last recommendations with `AsyncStorage` so the app opens offline | Sanjani Kumari |
 
 ## 5. Next steps, in order
 
-1. **Aditya Jha:** Supabase project set up and seeded. (LLM evaluation and prompt tuning are done: 97.9%.)
+1. **Aditya Jha:** Supabase project set up and seeded ([guide](docs/deployment.md), steps 1-2). (LLM evaluation and prompt tuning are done: 97.9%.)
 2. **Aditya Jha:** review the two new prompt rules in `emotionService.js`.
 3. **Niraj:** deploy the backend. **Hirannya:** Android build. **Sanjani:** app on the real backend.
 4. **Everyone:** test session from the test plan; owners fix their bugs.
