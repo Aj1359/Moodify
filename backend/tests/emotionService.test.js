@@ -2,6 +2,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { analyzeMood } = require('../src/services/emotionService');
+const llmGuard = require('../src/services/llmGuard');
+
+// Every test starts with an empty cache and fresh rate limits
+test.beforeEach(() => llmGuard.reset());
 const { MOODS, LEVELS } = require('../src/config/constants');
 
 test('emotionService: returns contract shape via keyword fallback when LLM_API_KEY is not set', async () => {

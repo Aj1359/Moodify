@@ -9,6 +9,7 @@
 const { MOODS, LEVELS, LIMITS } = require('../config/constants');
 const { formatMoodDefinitions, formatFewShot } = require('./promptExamples');
 const { keywordFallback } = require('./keywordFallback');
+const llmGuard = require('./llmGuard');
 
 const SYSTEM_PROMPT = `You are Moodify's multilingual mood and emotion classifier.
 Your job is to analyze how the user feels and classify their emotional state into 1 to 3 target mood categories from the supported list, ranked strongest first.
@@ -94,9 +95,10 @@ function validateAndCleanLlmOutput(parsed) {
 /**
  * Analyzes mood text using Gemini, falling back to keywordFallback on any failure or timeout.
  * @param {string} text - User mood input
+ * @param {{ userId?: string }} [options] - userId enables the per-user rate limit
  * @returns {Promise<import('../../mobile/src/types').MoodAnalysisResult>}
  */
-async function analyzeMood(text) {
+async function analyzeMood(text, { userId } = {}) {
   const apiKey = process.env.LLM_API_KEY;
   const model = process.env.LLM_MODEL || 'gemini-3.5-flash-lite';
 
@@ -104,6 +106,27 @@ async function analyzeMood(text) {
     return keywordFallback(text);
   }
 
+  const cached = llmGuard.getCached(text);
+  if (cached) return cached;
+
+  const slot = llmGuard.reserve(userId);
+  if (!slot.allowed) {
+    console.warn(`Gemini ${slot.reason} reached, using the keyword fallback`);
+    return keywordFallback(text);
+  }
+
+  const result = await callWithDeadline(text, model, apiKey);
+  if (result.source === 'llm') llmGuard.remember(text, result);
+  return result;
+}
+
+/**
+ * One Gemini call under a hard deadline; the keyword fallback on any failure.
+ * @param {string} text
+ * @param {string} model
+ * @param {string} apiKey
+ */
+async function callWithDeadline(text, model, apiKey) {
   const controller = new AbortController();
   let timeoutId;
   // A hard deadline for the whole call, including reading the body. Clearing the
