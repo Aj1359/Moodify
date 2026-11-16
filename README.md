@@ -23,17 +23,108 @@ Mood playlists usually make you pick from a fixed menu of tags. Moodify lets you
 
 ## Contents
 
+- [Architecture](#architecture)
 - [How it works](#how-it-works)
 - [Quick start](#quick-start)
 - [The NLP pipeline](#the-nlp-pipeline)
 - [Evaluation](#evaluation)
 - [Recommendations](#recommendations)
-- [Architecture](#architecture)
 - [API](#api)
 - [Testing](#testing)
 - [Project status](#project-status)
 - [Team](#team)
 - [Contributing](#contributing)
+
+## Architecture
+
+| Layer | Technology |
+| --- | --- |
+| Mobile app | React Native 0.74, Expo SDK 51, Expo Router, TypeScript (strict) |
+| Backend | Node.js 22+, Express 4 |
+| Database and auth | Supabase: Postgres, Auth, row-level security |
+| NLP | Gemini (JSON mode) with a rule-based multilingual fallback |
+| Playback | External YouTube links |
+
+```text
+Moodify/
+├── backend/
+│   ├── src/
+│   │   ├── app.js                    Express app, routes, JSON 404 and error handler
+│   │   ├── server.js                 Starts the app on PORT
+│   │   ├── config/                   Supabase clients, shared contract constants
+│   │   ├── controllers/              Mood, preferences, recommendation and feedback handlers
+│   │   ├── middlewares/              Auth (Supabase JWT), request validation, errors
+│   │   ├── routes/                   /api/mood, /api/preferences, /api/recommendations, /api/feedback
+│   │   ├── services/                 Gemini emotion service, quota guard (llmGuard.js), keyword
+│   │   │                             classifier, prompt examples, recommendation engine
+│   │   ├── utils/                    mappers.js (the only snake_case <-> camelCase layer), scoring.js
+│   │   └── data/                     Song catalog, fallback pool, mood lexicon
+│   ├── scripts/                      evaluate.js (benchmark report), seedSongs.js, checkSongLinks.js
+│   │                                 (npm run links), demoRecommendations.js, assignSongIds.js
+│   └── tests/                        Unit and HTTP tests, benchmark, evaluation toolkit
+├── mobile/
+│   ├── app/                          Screens (Expo Router): (auth), (tabs), recommendations
+│   ├── assets/                       App icon, adaptive icon, splash, favicon
+│   ├── eas.json                      Android build profiles (preview APK, offline demo APK)
+│   └── src/
+│       ├── components/               SongCard, MoodChip, FeedbackButtons, pickers
+│       ├── context/AuthContext.tsx   Session and onboarding state
+│       ├── hooks/                    useMood, useRecommendations
+│       ├── services/                 API client, Supabase client, mock backend
+│       └── types/index.ts            Shared request and response types
+├── .github/workflows/ci.yml          Tests and type check on every pull request
+├── supabase/
+│   ├── migrations/                   Database schema, row-level security, indexes
+│   └── seed_songs.sql                The 120-song catalog as plain SQL
+├── render.yaml                       Render blueprint for the backend
+└── docs/                             API contract, evaluation, deployment guide, test plan
+```
+
+**App screens:** Login, Sign up and Onboarding (languages and genres); then Home (mood chips, recent entries), Mood AI (type a feeling, confirm the mood), Recommendations, My Music (liked songs), My Mood (weekly counts, history, delete) and Profile.
+
+### Data model
+
+```mermaid
+erDiagram
+    PROFILES ||--o{ MOOD_ENTRIES : logs
+    PROFILES ||--o{ SONG_FEEDBACK : gives
+    SONGS ||--o{ SONG_FEEDBACK : receives
+
+    PROFILES {
+        uuid user_id PK
+        text name
+        text[] preferred_languages
+        text[] genres
+    }
+    SONGS {
+        uuid id PK
+        text title
+        text artist
+        text language
+        text genre
+        text[] moods
+        text energy
+        text url
+    }
+    MOOD_ENTRIES {
+        uuid id PK
+        uuid user_id FK
+        text input_text
+        text emotion
+        text energy
+        text intensity
+        text confirmed_mood
+        timestamp created_at
+    }
+    SONG_FEEDBACK {
+        uuid id PK
+        uuid user_id FK
+        uuid song_id FK
+        text type
+    }
+```
+
+Row-level security keeps every user's mood entries and feedback private. The backend uses the service role, so it also filters every query by the logged-in user.
 
 ## How it works
 
@@ -213,95 +304,6 @@ $$\text{Score}(s) = 0.5 \cdot \text{MoodMatch} + 0.3 \cdot \text{LanguageMatch} 
 - The language filter (Hindi, English or both) is strict.
 - Every song comes with a one-line reason, such as "Fits your Relaxed mood · you like Arijit Singh".
 - If the database is unreachable, a fixed pool of 20 songs ([`fallback_songs.json`](backend/src/data/fallback_songs.json): 10 Hindi, 10 English, every mood covered) is served, so the screen is never empty.
-
-## Architecture
-
-| Layer | Technology |
-| --- | --- |
-| Mobile app | React Native 0.74, Expo SDK 51, Expo Router, TypeScript (strict) |
-| Backend | Node.js 22+, Express 4 |
-| Database and auth | Supabase: Postgres, Auth, row-level security |
-| NLP | Gemini (JSON mode) with a rule-based multilingual fallback |
-| Playback | External YouTube links |
-
-```text
-Moodify/
-├── backend/
-│   ├── src/
-│   │   ├── app.js                    Express app, routes, JSON 404 and error handler
-│   │   ├── server.js                 Starts the app on PORT
-│   │   ├── config/                   Supabase clients, shared contract constants
-│   │   ├── controllers/              Mood, preferences, recommendation and feedback handlers
-│   │   ├── middlewares/              Auth (Supabase JWT), request validation, errors
-│   │   ├── routes/                   /api/mood, /api/preferences, /api/recommendations, /api/feedback
-│   │   ├── services/                 Gemini emotion service, quota guard (llmGuard.js), keyword
-│   │   │                             classifier, prompt examples, recommendation engine
-│   │   ├── utils/                    mappers.js (the only snake_case <-> camelCase layer), scoring.js
-│   │   └── data/                     Song catalog, fallback pool, mood lexicon
-│   ├── scripts/                      evaluate.js (benchmark report), seedSongs.js, demoRecommendations.js,
-│   │                                 assignSongIds.js
-│   └── tests/                        Unit and HTTP tests, benchmark, evaluation toolkit
-├── mobile/
-│   ├── app/                          Screens (Expo Router): (auth), (tabs), recommendations
-│   ├── assets/                       App icon, adaptive icon, splash, favicon
-│   ├── eas.json                      Android build profiles (preview APK, offline demo APK)
-│   └── src/
-│       ├── components/               SongCard, MoodChip, FeedbackButtons, pickers
-│       ├── context/AuthContext.tsx   Session and onboarding state
-│       ├── hooks/                    useMood, useRecommendations
-│       ├── services/                 API client, Supabase client, mock backend
-│       └── types/index.ts            Shared request and response types
-├── .github/workflows/ci.yml          Tests and type check on every pull request
-├── supabase/migrations/              Database schema, row-level security, indexes
-├── render.yaml                       Render blueprint for the backend
-└── docs/                             API contract, evaluation, deployment guide, test plan
-```
-
-**App screens:** Login, Sign up and Onboarding (languages and genres); then Home (mood chips, recent entries), Mood AI (type a feeling, confirm the mood), Recommendations, My Music (liked songs), My Mood (weekly counts, history, delete) and Profile.
-
-### Data model
-
-```mermaid
-erDiagram
-    PROFILES ||--o{ MOOD_ENTRIES : logs
-    PROFILES ||--o{ SONG_FEEDBACK : gives
-    SONGS ||--o{ SONG_FEEDBACK : receives
-
-    PROFILES {
-        uuid user_id PK
-        text name
-        text[] preferred_languages
-        text[] genres
-    }
-    SONGS {
-        uuid id PK
-        text title
-        text artist
-        text language
-        text genre
-        text[] moods
-        text energy
-        text url
-    }
-    MOOD_ENTRIES {
-        uuid id PK
-        uuid user_id FK
-        text input_text
-        text emotion
-        text energy
-        text intensity
-        text confirmed_mood
-        timestamp created_at
-    }
-    SONG_FEEDBACK {
-        uuid id PK
-        uuid user_id FK
-        uuid song_id FK
-        text type
-    }
-```
-
-Row-level security keeps every user's mood entries and feedback private. The backend uses the service role, so it also filters every query by the logged-in user.
 
 ## API
 
