@@ -58,12 +58,18 @@ export async function apiRequest<T>(
     accessToken = session.access_token;
   }
 
+  if (!USE_MOCKS && !API_BASE_URL) {
+    throw new ApiError(
+      "This build of the app is missing EXPO_PUBLIC_API_BASE_URL. Add it under EAS environment variables (preview) and rebuild.",
+      "CONFIG_ERROR",
+    );
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
+  const url = `${API_BASE_URL || "http://localhost:5000/api"}${endpoint}`;
 
   try {
-    const url = `${API_BASE_URL || "http://localhost:5000/api"}${endpoint}`;
-
     const response = USE_MOCKS
       ? await mockFetch(url, {
           method: options.method,
@@ -100,6 +106,15 @@ export async function apiRequest<T>(
 
     if (error instanceof Error && error.name === "AbortError") {
       throw new ApiError("Request timed out. Please try again.", "TIMEOUT");
+    }
+
+    // React Native's fetch rejects with TypeError("Network request failed")
+    // when the server cannot be reached at all; say which server that was.
+    if (error instanceof TypeError) {
+      throw new ApiError(
+        `Cannot reach the Moodify server at ${url.split("/api")[0]}. Check your internet connection and that the backend is running.`,
+        "NETWORK_ERROR",
+      );
     }
 
     throw new ApiError(
