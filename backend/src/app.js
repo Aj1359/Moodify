@@ -14,7 +14,15 @@ const { LIMITS } = require('./config/constants');
 const app = express();
 
 app.disable('x-powered-by');
-app.use(cors());
+
+// CORS only matters for the web build; the phone app sends no Origin header.
+// CORS_ORIGINS is a comma-separated allow-list (e.g. https://moodify.example.com);
+// leave it unset during development to allow every origin.
+const allowedOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+app.use(cors(allowedOrigins.length > 0 ? { origin: allowedOrigins } : {}));
 app.use(express.json({ limit: LIMITS.JSON_BODY_LIMIT }));
 
 // Health check (unauthenticated), used by the hosting platform and the app's connectivity check

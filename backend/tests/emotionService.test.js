@@ -2,6 +2,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { analyzeMood } = require('../src/services/emotionService');
+const llmGuard = require('../src/services/llmGuard');
+
+// Every test starts with an empty cache and fresh rate limits
+test.beforeEach(() => llmGuard.reset());
 const { MOODS, LEVELS } = require('../src/config/constants');
 
 test('emotionService: returns contract shape via keyword fallback when LLM_API_KEY is not set', async () => {
@@ -104,4 +108,75 @@ test('emotionService: falls back to keywords on an HTTP error, bad JSON, an unkn
     t.mock.restoreAll();
     t.mock.method(console, 'warn', () => {});
   }
+});
+
+test('emotionService: thinking is switched off for Gemini 2.5 Flash only', async (t) => {
+  const { supportsThinkingOff } = require('../src/services/emotionService');
+  assert.equal(supportsThinkingOff('gemini-2.5-flash'), true);
+  assert.equal(supportsThinkingOff('gemini-2.5-flash-lite'), true);
+  assert.equal(supportsThinkingOff('gemini-2.5-pro'), false);
+  assert.equal(supportsThinkingOff('gemini-1.5-flash'), false);
+
+  withKey(t);
+  const savedModel = process.env.LLM_MODEL;
+  process.env.LLM_MODEL = 'gemini-2.5-flash';
+  t.after(() => {
+    if (savedModel === undefined) delete process.env.LLM_MODEL;
+    else process.env.LLM_MODEL = savedModel;
+  });
+  const fetchMock = t.mock.method(
+    globalThis,
+    'fetch',
+    geminiReply('{"emotion":"joy","energy":"high","intensity":"high","context":"general","targetMoods":["Happy"]}')
+  );
+  await analyzeMood('so happy today');
+  const body = JSON.parse(fetchMock.mock.calls[0].arguments[1].body);
+  assert.deepEqual(body.generationConfig.thinkingConfig, { thinkingBudget: 0 });
+});
+
+test('emotionService: the default model is gemini-3.5-flash-lite, sent without a thinking config', async (t) => {
+  withKey(t);
+  const savedModel = process.env.LLM_MODEL;
+  delete process.env.LLM_MODEL;
+  t.after(() => {
+    if (savedModel !== undefined) process.env.LLM_MODEL = savedModel;
+  });
+  const fetchMock = t.mock.method(
+    globalThis,
+    'fetch',
+    geminiReply('{"emotion":"joy","energy":"high","intensity":"high","context":"general","targetMoods":["Happy"]}')
+  );
+  await analyzeMood('so happy today');
+  const [url, init] = fetchMock.mock.calls[0].arguments;
+  assert.ok(url.includes('/models/gemini-3.5-flash-lite:generateContent'));
+  assert.equal(JSON.parse(init.body).generationConfig.thinkingConfig, undefined);
+});
+
+test('emotionService: the 3 s deadline covers reading the body, not just the headers', async (t) => {
+  withKey(t);
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let aborted = false;
+  t.mock.method(globalThis, 'fetch', async (url, init) => {
+    init.signal.addEventListener('abort', () => {
+      aborted = true;
+    });
+    // Headers arrive at once, but the body never finishes streaming
+    return { ok: true, status: 200, statusText: 'OK', json: () => new Promise(() => {}) };
+  });
+
+  const pending = analyzeMood('bahut gussa aa raha hai');
+  await new Promise((resolve) => setImmediate(resolve)); // let fetch resolve
+  t.mock.timers.tick(3000);
+  const result = await pending;
+
+  assert.equal(result.source, 'keyword');
+  assert.equal(result.targetMoods[0], 'Angry');
+  assert.ok(aborted, 'the request is aborted at the deadline');
+});
+
+test('emotionService: unsupported extra moods are dropped, not fatal', () => {
+  const { validateAndCleanLlmOutput } = require('../src/services/emotionService');
+  const base = { emotion: 'joy', energy: 'high', intensity: 'high', context: 'celebration' };
+  assert.deepEqual(validateAndCleanLlmOutput({ ...base, targetMoods: ['Happy', 'Excited'] }).targetMoods, ['Happy']);
+  assert.equal(validateAndCleanLlmOutput({ ...base, targetMoods: ['Excited', 'Confused'] }), null);
 });

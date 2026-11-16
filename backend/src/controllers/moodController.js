@@ -14,7 +14,7 @@ const { MOODS, ERROR_CODES } = require('../config/constants');
 async function analyze(req, res, next) {
   try {
     const { text } = req.valid.body;
-    const analysis = await analyzeMood(text);
+    const analysis = await analyzeMood(text, { userId: req.user.id });
     return res.status(200).json({ data: analysis });
   } catch (err) {
     return next(err);

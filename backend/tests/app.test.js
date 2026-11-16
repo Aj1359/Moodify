@@ -96,3 +96,8 @@ test('the server does not advertise Express', async () => {
   const r = await call('GET', '/health');
   assert.equal(r.headers.get('x-powered-by'), null);
 });
+
+test('CORS allows every origin when CORS_ORIGINS is unset', async () => {
+  const res = await fetch(`${base}/health`, { headers: { Origin: 'http://localhost:8081' } });
+  assert.equal(res.headers.get('access-control-allow-origin'), '*');
+});

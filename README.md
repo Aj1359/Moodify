@@ -4,7 +4,7 @@
 > Type how you feel in English, Hindi or Hinglish, and get a ranked list of Hindi and English songs that fit, in under 10 seconds.
 
 [![CI](https://github.com/Aj1359/Moodify/actions/workflows/ci.yml/badge.svg)](https://github.com/Aj1359/Moodify/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-22+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Expo](https://img.shields.io/badge/Expo-SDK_51-000020?logo=expo&logoColor=white)](https://expo.dev/)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres_%26_Auth-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com/)
@@ -74,10 +74,12 @@ In mock mode, put `#error` in your mood text to simulate a server error, or `#fa
 
 ### Option B: run the full stack
 
+The short version is below. For deployment (Render backend, Android APK) and a demo-day checklist, follow **[docs/deployment.md](docs/deployment.md)**.
+
 **1. Database (Supabase)**
 
 1. Create a free project at [supabase.com](https://supabase.com).
-2. Open **SQL Editor**, paste [`supabase/migrations/20261108000000_init_schema.sql`](supabase/migrations/20261108000000_init_schema.sql) and run it.
+2. Open **SQL Editor** and run each file in [`supabase/migrations/`](supabase/migrations) in name order (schema first, then the history index).
 3. Check that the tables `profiles`, `songs`, `mood_entries` and `song_feedback` exist.
 
 To run Supabase locally in Docker instead, use `npx supabase start` from the repo root. It applies the same migration.
@@ -111,7 +113,9 @@ npx expo start
 | `SUPABASE_SERVICE_ROLE_KEY` | `backend/.env` | Service role key. Secret: backend only, never in the app |
 | `SUPABASE_ANON_KEY` | `backend/.env` | Public anon key, used to verify user tokens |
 | `LLM_API_KEY` | `backend/.env` | Gemini key from [Google AI Studio](https://aistudio.google.com/app/apikey). Without it, every request uses the keyword classifier |
-| `LLM_MODEL` | `backend/.env` | Gemini model id, for example `gemini-2.5-flash` |
+| `LLM_MODEL` | `backend/.env` | Gemini model id. Default and recommended: `gemini-3.5-flash-lite` (free tier: 500 requests a day; `gemini-2.5-flash` allows only 20) |
+| `LLM_DAILY_LIMIT`, `LLM_USER_PER_MINUTE` | `backend/.env` | Quota guard, default 450 a day and 10 per user per minute. Over a limit the keyword fallback answers |
+| `CORS_ORIGINS` | `backend/.env` | Comma-separated origins allowed for the web build. Empty allows all; the phone app is not affected |
 | `EXPO_PUBLIC_SUPABASE_URL` | `mobile/.env` | Same project URL |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | `mobile/.env` | Public anon key. The app never gets the service role key |
 | `EXPO_PUBLIC_API_BASE_URL` | `mobile/.env` | `http://localhost:5000/api` on a simulator; `http://<your laptop's LAN IP>:5000/api` on a phone |
@@ -151,10 +155,10 @@ The analysis returns a structured object:
 
 ### Stage 1: LLM (`backend/src/services/emotionService.js`)
 
-- **Model:** Gemini through its REST API, in JSON output mode at temperature 0.1.
-- **Prompt:** mood definitions, explicit rules (input may be in any of the three scripts; one to three moods, strongest first; exhaustion maps to Relaxed), and 12 few-shot examples from [`promptExamples.js`](backend/src/services/promptExamples.js). The examples cover all eight moods, all three scripts and the hard cases: negation, mixed feelings, a music request with no feeling word, and longing.
-- **Validation:** the reply is checked against the contract (allowed moods and levels, one to three moods, no duplicates). Anything that fails goes to stage 2.
-- **Timeout:** 3 seconds.
+- **Model:** `gemini-3.5-flash-lite` by default (set `LLM_MODEL` to change it) through the Gemini REST API, in JSON output mode at temperature 0.1. Chosen for its free-tier quota and speed; see [Model choice](docs/evaluation.md#model-choice).
+- **Prompt:** mood definitions, explicit rules (input may be in any of the three scripts; one to three moods, strongest first; exhaustion maps to Relaxed; joy about a person or a date is Romantic; losing interest in everything is Sad, not Relaxed), and 12 few-shot examples from [`promptExamples.js`](backend/src/services/promptExamples.js). The examples cover all eight moods, all three scripts and the hard cases: negation, mixed feelings, a music request with no feeling word, and longing.
+- **Validation:** the reply is checked against the contract (allowed moods and levels, one to three moods, no duplicates); letter case and a stray ```` ```json ```` wrapper are tolerated. Anything else that fails goes to stage 2.
+- **Timeout:** a hard 3-second deadline for the whole call, including reading the reply.
 
 ### Stage 2: rule-based fallback (`backend/src/services/keywordFallback.js`)
 
@@ -175,10 +179,16 @@ The benchmark in [`backend/tests/hinglish_eval.json`](backend/tests/hinglish_eva
 
 | Engine | Top-1 accuracy | Macro-F1 | Latency | Target |
 | --- | --- | --- | --- | --- |
-| Keyword classifier alone | **71.5%** | 0.754 | p95 < 3 ms | Never fails, < 50 ms |
-| Full pipeline (Gemini + fallback) | pending | pending | pending | **≥ 80%**, < 3 s |
+| Keyword classifier alone | 71.5% | 0.754 | p95 < 3 ms | Never fails, < 50 ms |
+| **Full pipeline (Gemini + fallback)** | **97.9%** | **0.979** | p95 1.5 s | **≥ 80%**, < 3 s ✅ |
 
-When the keyword classifier finds at least one mood cue, it is right **95.1%** of the time. Most of its errors are sentences with no mood word at all ("rent is due and my salary hasn't come yet"), which is what the LLM is for. The full report, with per-language and per-mood results, a confusion matrix and an error analysis, is in [docs/evaluation.md](docs/evaluation.md).
+| Language | Keyword classifier | Full pipeline |
+| --- | --- | --- |
+| English | 64.6% | 97.9% |
+| Hindi (Devanagari) | 75.0% | 97.9% |
+| Hinglish (Romanised) | 75.0% | 97.9% |
+
+The LLM fixes 39 of the keyword classifier's 41 errors, mostly sentences with no mood word at all ("rent is due and my salary hasn't come yet"). Its own mistakes are close calls (Happy vs Romantic, Sad vs Nostalgic) with the right mood second. Across three runs, Gemini's own answers were right 98.8% of the time. When the keyword classifier finds a mood cue it is right 95.1% of the time, which keeps the fallback dependable when Gemini is down. Per-mood results, confusion matrices, error analyses and the model comparison are in [docs/evaluation.md](docs/evaluation.md).
 
 ```bash
 cd backend
@@ -224,8 +234,8 @@ Moodify/
 │   │   ├── controllers/              Mood, preferences, recommendation and feedback handlers
 │   │   ├── middlewares/              Auth (Supabase JWT), request validation, errors
 │   │   ├── routes/                   /api/mood, /api/preferences, /api/recommendations, /api/feedback
-│   │   ├── services/                 Gemini emotion service, keyword classifier, prompt examples,
-│   │   │                             recommendation engine
+│   │   ├── services/                 Gemini emotion service, quota guard (llmGuard.js), keyword
+│   │   │                             classifier, prompt examples, recommendation engine
 │   │   ├── utils/                    mappers.js (the only snake_case <-> camelCase layer), scoring.js
 │   │   └── data/                     Song catalog, fallback pool, mood lexicon
 │   ├── scripts/                      evaluate.js (benchmark report), seedSongs.js, demoRecommendations.js,
@@ -233,6 +243,8 @@ Moodify/
 │   └── tests/                        Unit and HTTP tests, benchmark, evaluation toolkit
 ├── mobile/
 │   ├── app/                          Screens (Expo Router): (auth), (tabs), recommendations
+│   ├── assets/                       App icon, adaptive icon, splash, favicon
+│   ├── eas.json                      Android build profiles (preview APK, offline demo APK)
 │   └── src/
 │       ├── components/               SongCard, MoodChip, FeedbackButtons, pickers
 │       ├── context/AuthContext.tsx   Session and onboarding state
@@ -240,8 +252,9 @@ Moodify/
 │       ├── services/                 API client, Supabase client, mock backend
 │       └── types/index.ts            Shared request and response types
 ├── .github/workflows/ci.yml          Tests and type check on every pull request
-├── supabase/migrations/              Database schema and row-level security
-└── docs/                             API contract, evaluation report, test plan
+├── supabase/migrations/              Database schema, row-level security, indexes
+├── render.yaml                       Render blueprint for the backend
+└── docs/                             API contract, evaluation, deployment guide, test plan
 ```
 
 **App screens:** Login, Sign up and Onboarding (languages and genres); then Home (mood chips, recent entries), Mood AI (type a feeling, confirm the mood), Recommendations, My Music (liked songs), My Mood (weekly counts, history, delete) and Profile.
@@ -310,7 +323,7 @@ The full contract (allowed values, request and response shapes, error codes, bac
 ## Testing
 
 ```bash
-cd backend && npm test          # 76 tests: classifier, emotion service (with a mocked Gemini),
+cd backend && npm test          # 87 tests: classifier, emotion service (with a mocked Gemini),
                                 # validation, mappers, scoring, recommendations, feedback,
                                 # HTTP error envelopes, catalog integrity, benchmark accuracy floor
 cd mobile && npm run typecheck  # strict TypeScript check of the whole app
@@ -337,11 +350,15 @@ End-to-end cases for real phones, with a tester assigned to each area, are in [d
 - [x] Recommendation and feedback endpoints (`/api/recommendations`, `/api/feedback`), song seed loader
 - [x] YouTube links for all 120 songs
 - [x] JSON errors on every path (unknown routes, malformed bodies, unknown songs) and CI on every pull request
+- [x] Full-pipeline evaluation: 97.9% against the 80% target
 
-**Remaining**
-- [ ] Full-pipeline evaluation against the 80% target
-- [ ] Backend deployment and an Android build
-- [ ] End-to-end testing on real phones
+- [x] Quota guard for Gemini (cache, per-user and daily limits), CORS allow-list, history indexes
+- [x] Deployment configuration: Render blueprint, EAS build profiles, app icon and splash ([docs/deployment.md](docs/deployment.md))
+
+**Remaining (needs accounts and phones, not code)**
+- [ ] Create the Supabase project and load the songs
+- [ ] Deploy the backend on Render and build the APK
+- [ ] End-to-end testing on real phones ([docs/test-plan.md](docs/test-plan.md))
 
 ### Success criteria
 
@@ -366,9 +383,9 @@ End-to-end cases for real phones, with a tester assigned to each area, are in [d
 
 1. Branch from `main` with one branch per task: `feat/<area>`, `fix/<area>` or `docs/<area>`.
 2. Follow the contract in [docs/api.md](docs/api.md). Changes to it are agreed in the group first.
-3. Run `npm test` in `backend/` and `npx tsc --noEmit` in `mobile/` before opening a pull request.
+3. Run `npm test` in `backend/` and `npm run typecheck` in `mobile/` before opening a pull request. CI runs both.
 4. Open the pull request into `main`. Never commit `.env` files or keys.
 
 ## License
 
-[MIT](https://opensource.org/licenses/MIT).
+[MIT](LICENSE). Release notes are in [CHANGELOG.md](CHANGELOG.md).
