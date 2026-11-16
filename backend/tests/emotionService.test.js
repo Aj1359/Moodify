@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { analyzeMood } = require('../src/services/emotionService');
+const { analyzeMood, llmStatus } = require('../src/services/emotionService');
 const llmGuard = require('../src/services/llmGuard');
 
 // Every test starts with an empty cache and fresh rate limits
@@ -179,4 +179,28 @@ test('emotionService: unsupported extra moods are dropped, not fatal', () => {
   const base = { emotion: 'joy', energy: 'high', intensity: 'high', context: 'celebration' };
   assert.deepEqual(validateAndCleanLlmOutput({ ...base, targetMoods: ['Happy', 'Excited'] }).targetMoods, ['Happy']);
   assert.equal(validateAndCleanLlmOutput({ ...base, targetMoods: ['Excited', 'Confused'] }), null);
+});
+
+test('emotionService: llmStatus reports a missing key, the last success and the last fallback reason', async (t) => {
+  const saved = process.env.LLM_API_KEY;
+  delete process.env.LLM_API_KEY;
+  assert.equal(llmStatus().configured, false);
+  if (saved !== undefined) process.env.LLM_API_KEY = saved;
+
+  withKey(t);
+  assert.equal(llmStatus().configured, true);
+
+  t.mock.method(globalThis, 'fetch', geminiReply('{}', { ok: false, status: 403 }));
+  await analyzeMood('status check one');
+  assert.equal(llmStatus().lastFallback.reason, 'Gemini API error 403');
+
+  t.mock.restoreAll();
+  t.mock.method(console, 'warn', () => {});
+  t.mock.method(
+    globalThis,
+    'fetch',
+    geminiReply('{"emotion":"joy","energy":"high","intensity":"high","context":"general","targetMoods":["Happy"]}')
+  );
+  await analyzeMood('status check two');
+  assert.ok(!Number.isNaN(Date.parse(llmStatus().lastSuccessAt)));
 });

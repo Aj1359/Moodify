@@ -15,16 +15,18 @@ interface SongCardProps {
 
 export default function SongCard({ song }: SongCardProps) {
   const openSong = async () => {
+    // Open the link directly. Linking.canOpenURL() returns false for every
+    // https link on Android 11+ unless the manifest declares <queries>, which
+    // made each song show "This link is not supported". openURL rejects if
+    // nothing can handle the link, so the catch below still covers that case.
+    if (!/^https?:\/\//i.test(song.url)) {
+      Alert.alert("Unable to open song", "This song has no valid link.");
+      return;
+    }
     try {
-      const supported = await Linking.canOpenURL(song.url);
-
-      if (supported) {
-        await Linking.openURL(song.url);
-      } else {
-        Alert.alert("Unable to open song", "This link is not supported.");
-      }
+      await Linking.openURL(song.url);
     } catch {
-      Alert.alert("Error", "Could not open this song.");
+      Alert.alert("Unable to open song", "Could not open this song. Is a browser or YouTube installed?");
     }
   };
 

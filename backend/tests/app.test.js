@@ -45,6 +45,8 @@ test('GET /health is public and returns JSON', async () => {
   assert.equal(r.status, 200);
   assert.equal(r.json.status, 'ok');
   assert.ok(!Number.isNaN(Date.parse(r.json.timestamp)));
+  assert.equal(typeof r.json.llm.configured, 'boolean');
+  assert.equal(typeof r.json.llm.model, 'string');
 });
 
 test('unknown routes answer 404 NOT_FOUND in the error envelope, not HTML', async () => {
