@@ -4,14 +4,15 @@ import React, {
   useState,
   useEffect,
   useCallback,
-} from 'react';
-import { supabase } from '../services/supabase';
-import { getPreferences, updatePreferences, ApiError } from '../services/api';
-import { appStorage } from '../services/storage';
-import { UserProfile, UpdatePreferencesRequest } from '../types';
-import { Session, User } from '@supabase/supabase-js';
+} from "react";
+import { supabase } from "../services/supabase";
+import { getPreferences, updatePreferences, ApiError } from "../services/api";
+import { appStorage } from "../services/storage";
+import { UserProfile, UpdatePreferencesRequest } from "../types";
+import { Session, User } from "@supabase/supabase-js";
 
-const USE_MOCKS = process.env.EXPO_PUBLIC_USE_MOCKS === 'true';
+const env = process.env as Record<string, string | undefined>;
+const USE_MOCKS = env["EXPO_PUBLIC_USE_MOCKS"] === "true";
 
 interface AuthContextType {
   user: User | null;
@@ -38,10 +39,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await getPreferences();
       setProfile(data);
     } catch (err) {
-      if (err instanceof ApiError && err.code === 'PROFILE_NOT_FOUND') {
+      if (err instanceof ApiError && err.code === "PROFILE_NOT_FOUND") {
         setProfile(null);
       } else {
-        console.warn('Error fetching profile:', err);
+        console.warn("Error fetching profile:", err);
       }
     }
   }, []);
@@ -49,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (USE_MOCKS) {
       // Check if user had a saved session in local storage
-      appStorage.getItem('moodify_mock_session').then((saved) => {
+      appStorage.getItem("moodify_mock_session").then((saved) => {
         if (saved) {
           try {
             const parsed = JSON.parse(saved);
@@ -81,18 +82,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session) {
-          await fetchProfile();
-        } else {
-          setProfile(null);
-        }
-        setLoading(false);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session) {
+        await fetchProfile();
+      } else {
+        setProfile(null);
       }
-    );
+      setLoading(false);
+    });
 
     return () => {
       subscription.unsubscribe();
@@ -102,14 +103,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     if (USE_MOCKS) {
       const mockUser: any = {
-        id: '00000000-0000-4000-8000-000000000001',
-        email: email || 'user@moodify.app',
+        id: "00000000-0000-4000-8000-000000000001",
+        email: email || "user@moodify.app",
       };
       const mockSession: any = {
-        access_token: 'mock-token-' + Date.now(),
+        access_token: "mock-token-" + Date.now(),
         user: mockUser,
       };
-      await appStorage.setItem('moodify_mock_session', JSON.stringify(mockSession));
+      await appStorage.setItem(
+        "moodify_mock_session",
+        JSON.stringify(mockSession),
+      );
       setUser(mockUser);
       setSession(mockSession);
       await fetchProfile();
@@ -126,14 +130,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string) => {
     if (USE_MOCKS) {
       const mockUser: any = {
-        id: '00000000-0000-4000-8000-000000000001',
-        email: email || 'user@moodify.app',
+        id: "00000000-0000-4000-8000-000000000001",
+        email: email || "user@moodify.app",
       };
       const mockSession: any = {
-        access_token: 'mock-token-' + Date.now(),
+        access_token: "mock-token-" + Date.now(),
         user: mockUser,
       };
-      await appStorage.setItem('moodify_mock_session', JSON.stringify(mockSession));
+      await appStorage.setItem(
+        "moodify_mock_session",
+        JSON.stringify(mockSession),
+      );
       setUser(mockUser);
       setSession(mockSession);
       setProfile(null);
@@ -148,7 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     if (USE_MOCKS) {
-      await appStorage.removeItem('moodify_mock_session');
+      await appStorage.removeItem("moodify_mock_session");
       setUser(null);
       setSession(null);
       setProfile(null);
@@ -188,8 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
-

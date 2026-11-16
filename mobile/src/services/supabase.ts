@@ -1,10 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import { appStorage } from "./storage";
 
-const env = process.env as Record<string, string | undefined>;
+const supabaseUrl = "https://vbyiayxshtavntauzqjl.supabase.co";
+const supabaseAnonKey = "paste-the-complete-key-here";
 
-const supabaseUrl = env["EXPO_PUBLIC_SUPABASE_URL"] || "https://placeholder.supabase.co";
-const supabaseAnonKey = env["EXPO_PUBLIC_SUPABASE_ANON_KEY"] || "placeholder";
+if (!supabaseAnonKey) {
+  throw new Error("Missing Supabase anon public key");
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
