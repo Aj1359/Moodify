@@ -9,7 +9,8 @@
     "test": "node --test tests/*.test.js",
     "seed": "node scripts/seedSongs.js",
     "eval": "node scripts/evaluate.js",
-    "eval:llm": "node scripts/evaluate.js --engine llm --errors"
+    "eval:llm": "node scripts/evaluate.js --engine llm --errors",
+    "links": "node scripts/checkSongLinks.js"
   },
   "engines": {
     "node": ">=22"
