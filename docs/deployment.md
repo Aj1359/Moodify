@@ -48,7 +48,7 @@ npm run dev             # http://localhost:5000/health -> {"status":"ok"}
 **Check:**
 
 ```bash
-curl https://<service>.onrender.com/health                         # 200 {"status":"ok"}
+curl https://<service>.onrender.com/health                         # 200 {"status":"ok", "llm": {"configured": true, ...}}
 curl https://<service>.onrender.com/api/recommendations?mood=Happy # 401 UNAUTHORIZED (auth works)
 ```
 
@@ -110,7 +110,8 @@ eas build -p android --profile demo-offline    # optional backup APK that works 
 | Every request is 401 | The app's anon key or URL is from another project | Copy both again from Project Settings → API |
 | App always opens onboarding | No `profiles` row (404 `PROFILE_NOT_FOUND`) | Finish onboarding once; check `PUT /api/preferences` in the Render logs |
 | Recommendations say `"source": "fallback"` | Songs not loaded, or the backend cannot reach Supabase | Run `npm run seed`; check `SUPABASE_URL` and the service role key on Render |
-| Mood answers always `"source": "keyword"` | No Gemini key, wrong model, or quota used up | Check `LLM_API_KEY` and `LLM_MODEL` on Render; check the quota page; look for "Gemini" lines in the Render logs |
+| Mood answers always `"source": "keyword"` | No Gemini key, wrong model, or quota used up | Open `/health`: `llm.configured: false` means `LLM_API_KEY` is not set on Render; otherwise `llm.lastFallback.reason` says why (for example `Gemini API error 403` for a bad key, `429` for quota, `404` for a wrong `LLM_MODEL`) |
+| "This link is not supported" when playing a song | APK built before the song-link fix | Rebuild the APK from `main` |
 | Backend crashes at start with "native WebSocket not found" | Node older than 22 | `NODE_VERSION=22` (set by `render.yaml`) |
 | Web build: browser blocks requests (CORS) | `CORS_ORIGINS` set without the web origin | Add the origin, or leave `CORS_ORIGINS` empty |
 | APK cannot reach the backend | `EXPO_PUBLIC_API_BASE_URL` missing in the EAS environment | Add it under the **preview** environment and rebuild |

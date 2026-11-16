@@ -98,9 +98,32 @@ function validateAndCleanLlmOutput(parsed) {
  * @param {{ userId?: string }} [options] - userId enables the per-user rate limit
  * @returns {Promise<import('../../mobile/src/types').MoodAnalysisResult>}
  */
+const DEFAULT_MODEL = 'gemini-3.5-flash-lite';
+
+// What happened on the most recent Gemini attempts, for GET /health. Holds no
+// text from users and no secrets: only a short reason and a timestamp.
+const status = { lastSuccessAt: null, lastFallback: null };
+
+function noteFallback(reason) {
+  status.lastFallback = { reason, at: new Date().toISOString() };
+}
+
+/**
+ * Whether the LLM is set up, and how the latest calls went. Lets a deployment be
+ * checked from outside: a missing key is otherwise silent.
+ */
+function llmStatus() {
+  return {
+    configured: Boolean(process.env.LLM_API_KEY),
+    model: process.env.LLM_MODEL || DEFAULT_MODEL,
+    lastSuccessAt: status.lastSuccessAt,
+    lastFallback: status.lastFallback,
+  };
+}
+
 async function analyzeMood(text, { userId } = {}) {
   const apiKey = process.env.LLM_API_KEY;
-  const model = process.env.LLM_MODEL || 'gemini-3.5-flash-lite';
+  const model = process.env.LLM_MODEL || DEFAULT_MODEL;
 
   if (!apiKey) {
     return keywordFallback(text);
@@ -112,11 +135,15 @@ async function analyzeMood(text, { userId } = {}) {
   const slot = llmGuard.reserve(userId);
   if (!slot.allowed) {
     console.warn(`Gemini ${slot.reason} reached, using the keyword fallback`);
+    noteFallback(`${slot.reason} reached`);
     return keywordFallback(text);
   }
 
   const result = await callWithDeadline(text, model, apiKey);
-  if (result.source === 'llm') llmGuard.remember(text, result);
+  if (result.source === 'llm') {
+    llmGuard.remember(text, result);
+    status.lastSuccessAt = new Date().toISOString();
+  }
   return result;
 }
 
@@ -142,11 +169,13 @@ async function callWithDeadline(text, model, apiKey) {
     const result = await Promise.race([requestGemini(text, model, apiKey, controller.signal), deadline]);
     if (result === TIMED_OUT) {
       console.warn(`Gemini call timed out after ${LIMITS.LLM_TIMEOUT_MS}ms, falling back to keywords`);
+      noteFallback(`timed out after ${LIMITS.LLM_TIMEOUT_MS}ms`);
       return keywordFallback(text);
     }
     return result || keywordFallback(text);
   } catch (err) {
     console.warn('Error calling Gemini API:', err.message);
+    noteFallback(`network error: ${err.message}`);
     return keywordFallback(text);
   } finally {
     clearTimeout(timeoutId);
@@ -198,6 +227,7 @@ async function requestGemini(text, model, apiKey, signal) {
 
   if (!response.ok) {
     console.warn(`Gemini API error: ${response.status} ${response.statusText}`);
+    noteFallback(`Gemini API error ${response.status}`);
     return null;
   }
 
@@ -206,6 +236,7 @@ async function requestGemini(text, model, apiKey, signal) {
 
   if (!candidateText) {
     console.warn('Gemini returned an empty candidate text');
+    noteFallback('empty reply');
     return null;
   }
 
@@ -214,12 +245,14 @@ async function requestGemini(text, model, apiKey, signal) {
     parsed = JSON.parse(stripCodeFence(candidateText));
   } catch (parseErr) {
     console.warn('Failed to parse Gemini output as JSON:', parseErr.message);
+    noteFallback('reply was not JSON');
     return null;
   }
 
   const validated = validateAndCleanLlmOutput(parsed);
   if (!validated) {
     console.warn('Gemini JSON output failed contract validation, falling back to keywords:', JSON.stringify(parsed));
+    noteFallback('reply had no supported mood');
     return null;
   }
 
@@ -228,6 +261,7 @@ async function requestGemini(text, model, apiKey, signal) {
 
 module.exports = {
   analyzeMood,
+  llmStatus,
   validateAndCleanLlmOutput,
   stripCodeFence,
   supportsThinkingOff,

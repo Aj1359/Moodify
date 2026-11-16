@@ -10,6 +10,7 @@ const cors = require('cors');
 const apiRoutes = require('./routes');
 const { notFound, errorHandler } = require('./middlewares/errorHandler');
 const { LIMITS } = require('./config/constants');
+const { llmStatus } = require('./services/emotionService');
 
 const app = express();
 
@@ -27,7 +28,12 @@ app.use(express.json({ limit: LIMITS.JSON_BODY_LIMIT }));
 
 // Health check (unauthenticated), used by the hosting platform and the app's connectivity check
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', service: 'Moodify API', timestamp: new Date().toISOString() });
+  res.status(200).json({
+    status: 'ok',
+    service: 'Moodify API',
+    timestamp: new Date().toISOString(),
+    llm: llmStatus(),
+  });
 });
 
 app.get('/', (req, res) => {
