@@ -112,6 +112,7 @@ eas build -p android --profile demo-offline    # optional backup APK that works 
 | Recommendations say `"source": "fallback"` | Songs not loaded, or the backend cannot reach Supabase | Run `npm run seed`; check `SUPABASE_URL` and the service role key on Render |
 | Mood answers always `"source": "keyword"` | No Gemini key, wrong model, or quota used up | Open `/health`: `llm.configured: false` means `LLM_API_KEY` is not set on Render; otherwise `llm.lastFallback.reason` says why (for example `Gemini API error 403` for a bad key, `429` for quota, `404` for a wrong `LLM_MODEL`) |
 | "This link is not supported" when playing a song | APK built before the song-link fix | Rebuild the APK from `main` |
+| YouTube says "Video unavailable" for a song | The upload was removed or made private | `cd backend && npm run links` lists dead links; `npm run links -- --fix` swaps them for a YouTube search, then `npm run seed` updates Supabase (no app rebuild needed) |
 | Backend crashes at start with "native WebSocket not found" | Node older than 22 | `NODE_VERSION=22` (set by `render.yaml`) |
 | Web build: browser blocks requests (CORS) | `CORS_ORIGINS` set without the web origin | Add the origin, or leave `CORS_ORIGINS` empty |
 | APK cannot reach the backend | `EXPO_PUBLIC_API_BASE_URL` missing in the EAS environment | Add it under the **preview** environment and rebuild |

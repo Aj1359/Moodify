@@ -102,7 +102,7 @@ const SONGS: Song[] = [
       "Angry"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=qXg1qUODwms"
+    "url": "https://www.youtube.com/results?search_query=Zinda+Siddharth+Mahadevan"
   },
   {
     "id": "af678b2c-ad2c-572b-93d5-6fa9b177f394",
@@ -167,7 +167,7 @@ const SONGS: Song[] = [
       "Motivated"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=w_HaEz3466U"
+    "url": "https://www.youtube.com/results?search_query=Bhaag+D.K.+Bose+Ram+Sampath"
   },
   {
     "id": "77a035bb-ffb6-516d-a17c-90959a9d3859",
@@ -193,7 +193,7 @@ const SONGS: Song[] = [
       "Motivated"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=nCD2hj6zJEc"
+    "url": "https://www.youtube.com/results?search_query=Sooraj+Dooba+Hain+Arijit+Singh"
   },
   {
     "id": "20a7cfd2-125d-5dfa-bcc3-7296a2f1142e",
@@ -206,7 +206,7 @@ const SONGS: Song[] = [
       "Sad"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=3H_00j_eGts"
+    "url": "https://www.youtube.com/results?search_query=Phir+Le+Aya+Dil+Rekha+Bhardwaj"
   },
   {
     "id": "019aaad2-c29b-5383-8218-660b5cea4e08",
@@ -260,7 +260,7 @@ const SONGS: Song[] = [
       "Nostalgic"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=vt4i_v8_QfU"
+    "url": "https://www.youtube.com/results?search_query=Kho+Gaye+Hum+Kahan+Jasleen+Royal"
   },
   {
     "id": "d8d92c60-cae8-5bce-be95-1c87c1c7292b",
@@ -273,7 +273,7 @@ const SONGS: Song[] = [
       "Relaxed"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=BmUe3-7yHps"
+    "url": "https://www.youtube.com/results?search_query=Kasoor+Prateek+Kuhad"
   },
   {
     "id": "d1aceed7-5ab0-56d7-a3c7-af90b8afa4d2",
@@ -286,7 +286,7 @@ const SONGS: Song[] = [
       "Angry"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=r6tH_eW438A"
+    "url": "https://www.youtube.com/results?search_query=Aarambh+Hai+Prachand+Piyush+Mishra"
   },
   {
     "id": "9c0bcdb5-b84f-55a6-85a6-e33147548e91",
@@ -299,7 +299,7 @@ const SONGS: Song[] = [
       "Happy"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=EPZZ4BqUe-8"
+    "url": "https://www.youtube.com/results?search_query=Besabriyaan+Armaan+Malik"
   },
   {
     "id": "1452ef4d-995a-57fc-8042-d7150b548a25",
@@ -326,7 +326,7 @@ const SONGS: Song[] = [
       "Sad"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=2IGTCnL_tqc"
+    "url": "https://www.youtube.com/results?search_query=Tujhe+Kitna+Chahne+Lage+Arijit+Singh"
   },
   {
     "id": "fe491fdb-c112-50de-8aea-50d2332e4ff0",
@@ -365,7 +365,7 @@ const SONGS: Song[] = [
       "Nostalgic"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=qLCLvzTFuro"
+    "url": "https://www.youtube.com/results?search_query=Ghar+Mohit+Chauhan"
   },
   {
     "id": "18b1ddc6-a73b-5968-8e14-9e42c7042bf5",
@@ -379,7 +379,7 @@ const SONGS: Song[] = [
       "Nostalgic"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=rW_VqV_dMmc"
+    "url": "https://www.youtube.com/results?search_query=Safarnama+Lucky+Ali"
   },
   {
     "id": "c469fd41-584c-5f11-89e6-3c0f509ddfe6",
@@ -392,7 +392,7 @@ const SONGS: Song[] = [
       "Relaxed"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=n_Mdf6eWwR8"
+    "url": "https://www.youtube.com/results?search_query=O+Sanam+Lucky+Ali"
   },
   {
     "id": "2fb348f1-6e8d-5d57-b413-049f2cff008f",
@@ -405,7 +405,7 @@ const SONGS: Song[] = [
       "Stressed"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=Q7b4x1Wv9m0"
+    "url": "https://www.youtube.com/results?search_query=Kyun+Faya+Kun+(Instrumental+Lo-Fi)+BollyChill"
   },
   {
     "id": "9b907a48-ddec-52fc-b9b1-4920ca4abb85",
@@ -418,7 +418,7 @@ const SONGS: Song[] = [
       "Angry"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=y6049LzYpD8"
+    "url": "https://www.youtube.com/results?search_query=Dangal+Daler+Mehndi"
   },
   {
     "id": "5964255c-bd76-5fbb-a380-94279f88be01",
@@ -431,7 +431,7 @@ const SONGS: Song[] = [
       "Stressed"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=95I85WCSv7c"
+    "url": "https://www.youtube.com/results?search_query=Kar+Har+Maidaan+Fateh+Sukhwinder+Singh"
   },
   {
     "id": "2bb4d0a4-29f1-5400-bb43-5e8cd88d9bd9",
@@ -456,7 +456,7 @@ const SONGS: Song[] = [
       "Happy"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=Kz6M8FzVb3s"
+    "url": "https://www.youtube.com/results?search_query=Kunwara+Mika+Singh"
   },
   {
     "id": "566b22db-90df-56f1-87f4-b8227028b004",
@@ -469,7 +469,7 @@ const SONGS: Song[] = [
       "Stressed"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=n_e0_L1Qv2A"
+    "url": "https://www.youtube.com/results?search_query=Jiyein+Kyun+Papon"
   },
   {
     "id": "83836e21-0990-5641-b437-b714addf6ee6",
@@ -482,7 +482,7 @@ const SONGS: Song[] = [
       "Relaxed"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=d9nndvU_bX4"
+    "url": "https://www.youtube.com/results?search_query=Moh+Moh+Ke+Dhaage+Monali+Thakur"
   },
   {
     "id": "959998f6-9c32-51c3-8806-cd9060646152",
@@ -535,7 +535,7 @@ const SONGS: Song[] = [
       "Angry"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=1F3fCjK5s_4"
+    "url": "https://www.youtube.com/results?search_query=Aadat+Atif+Aslam"
   },
   {
     "id": "2d648939-b39e-5c1b-a7a9-e669ebc37cf9",
@@ -548,7 +548,7 @@ const SONGS: Song[] = [
       "Sad"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=aG_jFz5Q3-4"
+    "url": "https://www.youtube.com/results?search_query=Woh+Lamhe+Atif+Aslam"
   },
   {
     "id": "b8c7e7f5-21b7-5ed9-a696-a834eb23535b",
@@ -561,7 +561,7 @@ const SONGS: Song[] = [
       "Happy"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=Vx7vF6Zq8B4"
+    "url": "https://www.youtube.com/results?search_query=Mitwa+Shafqat+Amanat+Ali"
   },
   {
     "id": "bae854f0-2569-5e9c-8d61-62d0bf44dd49",
@@ -574,7 +574,7 @@ const SONGS: Song[] = [
       "Stressed"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=9_jG_c8R14Y"
+    "url": "https://www.youtube.com/results?search_query=Yeh+Fitoor+Mera+Arijit+Singh"
   },
   {
     "id": "035aab9b-ecf8-59ff-8e26-9401c52d1c46",
@@ -588,7 +588,7 @@ const SONGS: Song[] = [
       "Angry"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=ttKX5bF46yM"
+    "url": "https://www.youtube.com/results?search_query=Nadaan+Parindey+A.R.+Rahman"
   },
   {
     "id": "6f578e6f-f791-50a1-b5f4-6dd4118011fc",
@@ -601,7 +601,7 @@ const SONGS: Song[] = [
       "Happy"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=O-mqC5A2_So"
+    "url": "https://www.youtube.com/results?search_query=Chak+De+India+Sukhwinder+Singh"
   },
   {
     "id": "6b97c49e-1dd7-579d-bc45-7488dccda36a",
@@ -614,7 +614,7 @@ const SONGS: Song[] = [
       "Relaxed"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=mZqP0k4_YhU"
+    "url": "https://www.youtube.com/results?search_query=Pee+Loon+Mohit+Chauhan"
   },
   {
     "id": "354e4617-6957-54a6-b287-97825939417a",
@@ -628,7 +628,7 @@ const SONGS: Song[] = [
       "Stressed"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=w_y_G1B4Fp0"
+    "url": "https://www.youtube.com/results?search_query=Bulleya+Amit+Mishra"
   },
   {
     "id": "6a4c9ea8-8aaf-5195-9bce-7efce2b00464",
@@ -642,7 +642,7 @@ const SONGS: Song[] = [
       "Relaxed"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=BTg_zWc_0kU"
+    "url": "https://www.youtube.com/results?search_query=Baarishein+Anuv+Jain"
   },
   {
     "id": "c5e96086-c1a8-52d2-88ae-a7d88c282ddd",
@@ -655,7 +655,7 @@ const SONGS: Song[] = [
       "Relaxed"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=vA8OxMm_H4U"
+    "url": "https://www.youtube.com/results?search_query=Alag+Aasmaan+Anuv+Jain"
   },
   {
     "id": "3d9b1f5d-687b-5694-bbea-30d865f00b69",
@@ -668,7 +668,7 @@ const SONGS: Song[] = [
       "Relaxed"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=S8L_zBvLz_Y"
+    "url": "https://www.youtube.com/results?search_query=Gul+Anuv+Jain"
   },
   {
     "id": "8c9289fe-fd3d-5718-8fd2-4423349caeaa",
@@ -682,7 +682,7 @@ const SONGS: Song[] = [
       "Relaxed"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=yE_q8U1u9P4"
+    "url": "https://www.youtube.com/results?search_query=Waqt+Ki+Baatein+Dream+Note"
   },
   {
     "id": "46230c9d-68cf-5ead-bdbd-1b525989adb9",
@@ -709,7 +709,7 @@ const SONGS: Song[] = [
       "Nostalgic"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=Z3k_lYjE26c"
+    "url": "https://www.youtube.com/results?search_query=Aaoge+Tum+Kabhi+The+Local+Train"
   },
   {
     "id": "e228d400-8d1d-5f9b-a86e-beefde25c3b7",
@@ -722,7 +722,7 @@ const SONGS: Song[] = [
       "Relaxed"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=F_fK3yX6Mbc"
+    "url": "https://www.youtube.com/results?search_query=Dil+Mere+The+Local+Train"
   },
   {
     "id": "14d0a596-e701-5e6c-ba6e-e8495725e2bd",
@@ -735,7 +735,7 @@ const SONGS: Song[] = [
       "Angry"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=Zf_x2v0m_uU"
+    "url": "https://www.youtube.com/results?search_query=Khudi+The+Local+Train"
   },
   {
     "id": "c88d514f-7575-55d6-b62e-b27170e3f99a",
@@ -748,7 +748,7 @@ const SONGS: Song[] = [
       "Happy"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=XwT23Y7R0Q8"
+    "url": "https://www.youtube.com/results?search_query=Sham+Amit+Trivedi"
   },
   {
     "id": "71f49f1d-74fd-5c98-ab39-82edc9026eb1",
@@ -761,7 +761,7 @@ const SONGS: Song[] = [
       "Happy"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=lT1v4k2f5uM"
+    "url": "https://www.youtube.com/results?search_query=Wake+Up+Sid!+Shankar+Mahadevan"
   },
   {
     "id": "c5df2c57-f0b7-58ce-ac5f-4684a327535c",
@@ -774,7 +774,7 @@ const SONGS: Song[] = [
       "Relaxed"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=FfG24jK-U50"
+    "url": "https://www.youtube.com/results?search_query=Senorita+Farhan+Akhtar"
   },
   {
     "id": "60841b58-62b9-57d0-9403-08032d832e24",
@@ -787,7 +787,7 @@ const SONGS: Song[] = [
       "Motivated"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=B1b_w2k3c3w"
+    "url": "https://www.youtube.com/results?search_query=Socha+Hai+Farhan+Akhtar"
   },
   {
     "id": "4bd515bf-299b-56a2-8c8d-84245e62fb31",
@@ -800,7 +800,7 @@ const SONGS: Song[] = [
       "Nostalgic"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=pp8v_uMhM4U"
+    "url": "https://www.youtube.com/results?search_query=Ghar+More+Pardesiya+Shreya+Ghoshal"
   },
   {
     "id": "ea6dec2e-9684-53cf-882e-1f65502e5d82",
@@ -812,7 +812,7 @@ const SONGS: Song[] = [
       "Happy"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=II2EO33EbhI"
+    "url": "https://www.youtube.com/results?search_query=Badtameez+Dil+Benny+Dayal"
   },
   {
     "id": "d59b045e-9bba-5ce4-adff-8ee883c14f71",
@@ -825,7 +825,7 @@ const SONGS: Song[] = [
       "Relaxed"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=cBmsJ_q7_tY"
+    "url": "https://www.youtube.com/results?search_query=Subhanallah+Sreerama+Chandra"
   },
   {
     "id": "9baf2784-0b63-5ac9-9d6b-96f3138b63e5",
@@ -1186,7 +1186,7 @@ const SONGS: Song[] = [
       "Happy"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=6Graa_KhN6s"
+    "url": "https://www.youtube.com/results?search_query=Banana+Pancakes+Jack+Johnson"
   },
   {
     "id": "d55d5949-d0d8-5763-a5e5-93d8f949cb32",
@@ -1199,7 +1199,7 @@ const SONGS: Song[] = [
       "Stressed"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=ghPcYqn0G4o"
+    "url": "https://www.youtube.com/results?search_query=Breathe+Me+Sia"
   },
   {
     "id": "37519741-301a-5ea9-9205-55664b4aec78",
@@ -1211,7 +1211,7 @@ const SONGS: Song[] = [
       "Motivated"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=YaEG25663b8"
+    "url": "https://www.youtube.com/results?search_query=Unstoppable+Sia"
   },
   {
     "id": "7cc1227a-9b22-5aec-b4a5-cc60a5105197",
@@ -1302,7 +1302,7 @@ const SONGS: Song[] = [
       "Happy"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=eFjjO_lhFXY"
+    "url": "https://www.youtube.com/results?search_query=Summer+of+'69+Bryan+Adams"
   },
   {
     "id": "c2ea5dd9-c159-5a86-8540-ee919aaecf83",
@@ -1329,7 +1329,7 @@ const SONGS: Song[] = [
       "Romantic"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=u57d4_b_YgI"
+    "url": "https://www.youtube.com/results?search_query=Better+Together+Jack+Johnson"
   },
   {
     "id": "1b19f420-d54a-5a5d-809f-465fa9c76f80",
@@ -1342,7 +1342,7 @@ const SONGS: Song[] = [
       "Happy"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=wkMBOObSkGU"
+    "url": "https://www.youtube.com/results?search_query=Put+Your+Records+On+Corinne+Bailey+Rae"
   },
   {
     "id": "bb0c27d3-48fd-5235-81b6-3a065d621e6b",
@@ -1355,7 +1355,7 @@ const SONGS: Song[] = [
       "Motivated"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=VuNIsY6JdUw"
+    "url": "https://www.youtube.com/results?search_query=Good+as+Hell+Lizzo"
   },
   {
     "id": "06f593a1-ffb0-53bf-aa56-2c02dd5e7daf",
@@ -1407,7 +1407,7 @@ const SONGS: Song[] = [
       "Nostalgic"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=ekzHIWoi8PU"
+    "url": "https://www.youtube.com/results?search_query=When+I+Was+Your+Man+Bruno+Mars"
   },
   {
     "id": "30e767e0-48b9-5d09-b982-0b7d2950195e",
@@ -1433,7 +1433,7 @@ const SONGS: Song[] = [
       "Angry"
     ],
     "energy": "medium",
-    "url": "https://www.youtube.com/watch?v=ZmDBbnmKqqQ"
+    "url": "https://www.youtube.com/results?search_query=drivers+license+Olivia+Rodrigo"
   },
   {
     "id": "351baffc-470e-5866-8ee9-6e4696a86064",
@@ -1484,7 +1484,7 @@ const SONGS: Song[] = [
       "Stressed"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=Gd9OhYroKA0"
+    "url": "https://www.youtube.com/results?search_query=Crawling+Linkin+Park"
   },
   {
     "id": "de1a6b20-5081-5068-85e1-53cd32a7c316",
@@ -1510,7 +1510,7 @@ const SONGS: Song[] = [
       "Relaxed"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=8m9g_sC3Ybg"
+    "url": "https://www.youtube.com/results?search_query=Beyond+Leon+Bridges"
   },
   {
     "id": "1c98ba79-15d3-5df5-8350-a72cae65d0a2",
@@ -1549,7 +1549,7 @@ const SONGS: Song[] = [
       "Motivated"
     ],
     "energy": "high",
-    "url": "https://www.youtube.com/watch?v=dX3k_PDnzHE"
+    "url": "https://www.youtube.com/results?search_query=Midnight+City+M83"
   },
   {
     "id": "296d808f-f8ba-5fb1-a776-28f1f2d56975",
@@ -1603,7 +1603,7 @@ const SONGS: Song[] = [
       "Nostalgic"
     ],
     "energy": "low",
-    "url": "https://www.youtube.com/watch?v=4dJ4KxM_l8w"
+    "url": "https://www.youtube.com/results?search_query=Viva+La+Vida+(Lo-Fi)+Lofi+Fruits"
   }
 ];
 
