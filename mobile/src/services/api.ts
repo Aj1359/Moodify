@@ -12,10 +12,10 @@ import {
   MoodAnalysisResult,
 } from "../types";
 
-const env = process.env as Record<string, string | undefined>;
-
-const API_BASE_URL = env["EXPO_PUBLIC_API_BASE_URL"];
-const USE_MOCKS = env["EXPO_PUBLIC_USE_MOCKS"] === "true";
+// Expo bakes EXPO_PUBLIC_* values into the build only when they are read as
+// process.env.EXPO_PUBLIC_NAME. Indirect reads (env["..."]) are empty on a phone.
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL;
+const USE_MOCKS = process.env.EXPO_PUBLIC_USE_MOCKS === "true";
 
 export class ApiError extends Error {
   code: string;

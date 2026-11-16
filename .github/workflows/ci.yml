@@ -41,3 +41,11 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
       - run: npm ci
       - run: npm run typecheck
+      - name: EXPO_PUBLIC variables are read directly
+        # Expo inlines EXPO_PUBLIC_* only for process.env.EXPO_PUBLIC_NAME. Any other
+        # read compiles to undefined on a phone build, so fail on it here.
+        run: |
+          if grep -rnE 'process\.env' src app | grep -vE 'process\.env\.(EXPO_PUBLIC_[A-Z0-9_]+|NODE_ENV)\b'; then
+            echo "Read env vars as process.env.EXPO_PUBLIC_NAME so Expo can inline them."
+            exit 1
+          fi
