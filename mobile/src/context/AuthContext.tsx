@@ -5,7 +5,7 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
-import { supabase } from '../services/supabase';
+import { supabase, assertSupabaseConfigured } from '../services/supabase';
 import { getPreferences, updatePreferences, ApiError } from '../services/api';
 import { appStorage } from '../services/storage';
 import { UserProfile, UpdatePreferencesRequest } from '../types';
@@ -115,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetchProfile();
       return;
     }
+    assertSupabaseConfigured();
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -139,6 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null);
       return;
     }
+    assertSupabaseConfigured();
     const { error } = await supabase.auth.signUp({
       email,
       password,
